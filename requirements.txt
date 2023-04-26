@@ -1,0 +1,13 @@
+imgviz==1.2.6
+mahotas==1.4.13
+numpy
+opencv_python
+Pillow
+PyQt5
+PyYAML
+torch
+torchvision
+pycocotools
+matplotlib
+# onnxruntime
+# onnx

@@ -1,0 +1,164 @@
+label:
+- color: '#000000'
+  name: __background__
+- color: '#ff3838'
+  name: person
+- color: '#ff9d97'
+  name: bicycle
+- color: '#ff701f'
+  name: car
+- color: '#ffb21d'
+  name: motorcycle
+- color: '#cfd231'
+  name: airplane
+- color: '#48f90a'
+  name: bus
+- color: '#92cc17'
+  name: train
+- color: '#3ddb86'
+  name: truck
+- color: '#1a9334'
+  name: boat
+- color: '#00d4bb'
+  name: traffic light
+- color: '#2c99a8'
+  name: fire hydrant
+- color: '#00c2ff'
+  name: stop sign
+- color: '#344593'
+  name: parking meter
+- color: '#6473ff'
+  name: bench
+- color: '#0018ec'
+  name: bird
+- color: '#8438ff'
+  name: cat
+- color: '#520085'
+  name: dog
+- color: '#cb38ff'
+  name: horse
+- color: '#ff95c8'
+  name: sheep
+- color: '#ff37c7'
+  name: cow
+- color: '#ff3838'
+  name: elephant
+- color: '#ff9d97'
+  name: bear
+- color: '#ff701f'
+  name: zebra
+- color: '#ffb21d'
+  name: giraffe
+- color: '#cfd231'
+  name: backpack
+- color: '#48f90a'
+  name: umbrella
+- color: '#92cc17'
+  name: handbag
+- color: '#3ddb86'
+  name: tie
+- color: '#1a9334'
+  name: suitcase
+- color: '#00d4bb'
+  name: frisbee
+- color: '#2c99a8'
+  name: skis
+- color: '#00c2ff'
+  name: snowboard
+- color: '#344593'
+  name: sports ball
+- color: '#6473ff'
+  name: kite
+- color: '#0018ec'
+  name: baseball bat
+- color: '#8438ff'
+  name: baseball glove
+- color: '#520085'
+  name: skateboard
+- color: '#cb38ff'
+  name: surfboard
+- color: '#ff95c8'
+  name: tennis racket
+- color: '#ff37c7'
+  name: bottle
+- color: '#ff3838'
+  name: wine glass
+- color: '#ff9d97'
+  name: cup
+- color: '#ff701f'
+  name: fork
+- color: '#ffb21d'
+  name: knife
+- color: '#cfd231'
+  name: spoon
+- color: '#48f90a'
+  name: bowl
+- color: '#92cc17'
+  name: banana
+- color: '#3ddb86'
+  name: apple
+- color: '#1a9334'
+  name: sandwich
+- color: '#00d4bb'
+  name: orange
+- color: '#2c99a8'
+  name: broccoli
+- color: '#00c2ff'
+  name: carrot
+- color: '#344593'
+  name: hot dog
+- color: '#6473ff'
+  name: pizza
+- color: '#0018ec'
+  name: donut
+- color: '#8438ff'
+  name: cake
+- color: '#520085'
+  name: chair
+- color: '#cb38ff'
+  name: couch
+- color: '#ff95c8'
+  name: potted plant
+- color: '#ff37c7'
+  name: bed
+- color: '#ff3838'
+  name: dining table
+- color: '#ff9d97'
+  name: toilet
+- color: '#ff701f'
+  name: tv
+- color: '#ffb21d'
+  name: laptop
+- color: '#cfd231'
+  name: mouse
+- color: '#48f90a'
+  name: remote
+- color: '#92cc17'
+  name: keyboard
+- color: '#3ddb86'
+  name: cell phone
+- color: '#1a9334'
+  name: microwave
+- color: '#00d4bb'
+  name: oven
+- color: '#2c99a8'
+  name: toaster
+- color: '#00c2ff'
+  name: sink
+- color: '#344593'
+  name: refrigerator
+- color: '#6473ff'
+  name: book
+- color: '#0018ec'
+  name: clock
+- color: '#8438ff'
+  name: vase
+- color: '#520085'
+  name: scissors
+- color: '#cb38ff'
+  name: teddy bear
+- color: '#ff95c8'
+  name: hair drier
+- color: '#ff37c7'
+  name: toothbrush
+language: zh

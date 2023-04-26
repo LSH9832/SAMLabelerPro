@@ -1,0 +1,16 @@
+label:
+- color: '#000000'
+  name: __background__
+- color: '#ef2929'
+  name: person
+- color: '#00ff00'
+  name: car
+- color: '#0a23ff'
+  name: truck
+- color: '#18ffec'
+  name: bus
+- color: '#f5ff39'
+  name: bicycle
+- color: '#ff155b'
+  name: tricycle
+language: zh

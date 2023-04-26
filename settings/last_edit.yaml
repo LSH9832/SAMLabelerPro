@@ -1,0 +1,6 @@
+cfg: settings/coco.yaml
+current_index: 2
+force_model_type: null
+half: true
+image_dir: ./example/images
+label_dir: ./example/images

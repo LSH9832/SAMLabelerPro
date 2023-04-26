@@ -1,0 +1,22 @@
+label:
+- color: '#FF3838'
+  name: pedestrian
+- color: '#FF9D97'
+  name: people
+- color: '#FF701F'
+  name: bicycle
+- color: '#FFB21D'
+  name: car
+- color: '#CFD231'
+  name: van
+- color: '#48F90A'
+  name: truck
+- color: '#92CC17'
+  name: tricycle
+- color: '#3DDB86'
+  name: awning-tricycle
+- color: '#1A9334'
+  name: bus
+- color: '#00D4BB'
+  name: motor
+language: zh

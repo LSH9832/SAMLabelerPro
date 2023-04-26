@@ -1,0 +1,38 @@
+label:
+- color: '#FF3838'
+  name: plane
+- color: '#FF9D97'
+  name: ship
+- color: '#FF701F'
+  name: storage tank
+- color: '#FFB21D'
+  name: baseball diamond
+- color: '#CFD231'
+  name: tennis court
+- color: '#48F90A'
+  name: basketball court
+- color: '#92CC17'
+  name: ground track field
+- color: '#3DDB86'
+  name: harbor
+- color: '#1A9334'
+  name: bridge
+- color: '#00D4BB'
+  name: large vehicle
+- color: '#2C99A8'
+  name: small vehicle
+- color: '#00C2FF'
+  name: helicopter
+- color: '#344593'
+  name: roundabout
+- color: '#6473FF'
+  name: soccer ball field
+- color: '#0018EC'
+  name: swimming pool
+- color: '#8438FF'
+  name: container crane
+- color: '#520085'
+  name: airport
+- color: '#CB38FF'
+  name: helipad
+language: zh
