@@ -27,7 +27,7 @@ half: true
 
 - [vit_b模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth)：0.9G（打开本工具前）→ 2.6G（打开工具并开始标注后）
 - [vit_l模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth)：0.9G（打开本工具前）→ 3.1G（打开工具并开始标注后）
-- 由于vit_h模型半精度效果差，在此不列出。
+- 由于[vit_h模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth)半精度效果差，在此不列出。
 
 ### 2.3 可手动选择模型大小
 
