@@ -66,7 +66,8 @@ Q → 鼠标点点点 → E → E → Q → 鼠标点点点 → E → E → Q �
 
 ## 3 安装与运行
 
-torch和torchvision不用多说，先按照pytorch官网[给出的步骤](https://pytorch.org/get-started/previous-versions/)安装， 然后
+- 首先把[模型](#22-半精度推理)下载下来
+- 然后torch和torchvision不用多说，按照pytorch官网[给出的步骤](https://pytorch.org/get-started/previous-versions/)安装， 然后
 ```
 pip install -r requirements.txt
 python main.py
