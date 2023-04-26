@@ -1,7 +1,7 @@
 # SAMLabeler: 使用[Segment Anyting Model](https://github.com/facebookresearch/segment-anything)辅助的标签工具
 
 ## 注意
-- 本工具非原创，**魔改自[yatengLG](https://github.com/yatengLG)大佬的[ISAT_with_segment_anything](https://github.com/yatengLG/ISAT_with_segment_anything)，包含其所有功能**（截至2023年4月26日23:59），界面也相同，其功能使用方法请阅读该项目的[README.md](https://github.com/yatengLG/ISAT_with_segment_anything/blob/master/README.md)。
+- 本工具非原创，**魔改自[yatengLG](https://github.com/yatengLG)大佬的[ISAT_with_segment_anything](https://github.com/yatengLG/ISAT_with_segment_anything)，包含其所有功能**（截至2023年4月26日23:59），界面也相同，其功能使用方法请阅读该项目的[README.md](https://github.com/yatengLG/ISAT_with_segment_anything/blob/master/README.md)。再次感谢大佬的分享！
 - 使用本工具时为避免导入冲突，请务必不要在运行环境中安装SAM源码，本项目中的segment_anything文件夹便是作了一定改动的SAM源码。
 - 如果有QT报错，请把requirements.txt文件中的opencv_python换为opencv_python_headless
 
