@@ -178,7 +178,7 @@ class Ui_MainWindow(object):
         self.actionAbout.setIcon(icon13)
         self.actionAbout.setObjectName("actionAbout")
         self.actionSegment_anything = QtWidgets.QAction(MainWindow)
-        icon14 = QtGui.QIcon()
+        self.win_icon = icon14 = QtGui.QIcon()
         icon14.addPixmap(QtGui.QPixmap(":/icon/icons/M_Favicon.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionSegment_anything.setIcon(icon14)
         self.actionSegment_anything.setObjectName("actionSegment_anything")
@@ -216,6 +216,17 @@ class Ui_MainWindow(object):
         self.actionConverter.setIcon(icon19)
         self.actionConverter.setWhatsThis("")
         self.actionConverter.setObjectName("actionConverter")
+
+        self.actionConverter_coco = QtWidgets.QAction(MainWindow)
+        self.actionConverter_coco.setIcon(icon19)
+        self.actionConverter_coco.setWhatsThis("convert to labels of COCO format")
+        self.actionConverter_coco.setObjectName("actionConverter_coco")
+
+
+
+
+
+
         self.actionChinese = QtWidgets.QAction(MainWindow)
         self.actionChinese.setCheckable(True)
         font = QtGui.QFont()
@@ -276,6 +287,7 @@ class Ui_MainWindow(object):
         self.menuAbout.addAction(self.actionShortcut)
         self.menuAbout.addAction(self.actionAbout)
         self.menuTools.addAction(self.actionConverter)
+        self.menuTools.addAction(self.actionConverter_coco)
         self.menuEdit.addAction(self.actionSegment_anything)
         self.menuEdit.addAction(self.actionPolygon)
         self.menuEdit.addAction(self.actionBackspace)
@@ -385,6 +397,10 @@ class Ui_MainWindow(object):
         self.actionTo_bottom.setShortcut(_translate("MainWindow", "B"))
         self.actionConverter.setText(_translate("MainWindow", "Label converter"))
         self.actionConverter.setStatusTip(_translate("MainWindow", "Convert annotations to png image."))
+
+        self.actionConverter_coco.setText(_translate("MainWindow", "Convert to COCO"))
+        self.actionConverter_coco.setStatusTip(_translate("MainWindow", "Export annotations to coco-format labels."))
+
         self.actionChinese.setText(_translate("MainWindow", "中文"))
         self.actionEnglish.setText(_translate("MainWindow", "English"))
         self.actionBackspace.setText(_translate("MainWindow", "Backspace"))

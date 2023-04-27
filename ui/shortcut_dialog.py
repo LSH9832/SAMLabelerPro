@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/super/PycharmProjects/ISAT_with_segment_anything/ui/shortcut_dialog.ui'
+# Form implementation generated from reading ui file '/home/super/PycharmProjects/SAMLabeler_with_segment_anything/ui/shortcut_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #
@@ -259,7 +259,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "help"))
+        # Dialog.setWindowTitle(_translate("Dialog", "help - shortcut"))
         self.label.setText(_translate("Dialog", "Shortcut"))
         self.label_20.setText(_translate("Dialog", "B"))
         self.label_19.setText(_translate("Dialog", "S"))

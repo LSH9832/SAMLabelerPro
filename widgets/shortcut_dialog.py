@@ -9,3 +9,7 @@ class ShortcutDialog(QtWidgets.QDialog, Ui_Dialog):
         super(ShortcutDialog, self).__init__(parent)
         self.setupUi(self)
         self.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
+        import yaml
+        self.setWindowTitle("Help - ShortCut"
+                            if yaml.load(open(parent.edit_data["cfg"]), yaml.SafeLoader)["language"] == "en"
+                            else "帮助 - 快捷键")

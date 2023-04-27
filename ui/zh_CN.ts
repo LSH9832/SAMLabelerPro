@@ -50,8 +50,8 @@
     </message>
     <message>
         <location filename="convert_dialog.py" line="106"/>
-        <source>ISAT to png converter</source>
-        <translation>ISAT标签文件转png</translation>
+        <source>SAMLabeler to png converter</source>
+        <translation>SAMLabeler标签文件转png</translation>
     </message>
     <message>
         <location filename="convert_dialog.py" line="107"/>
@@ -70,8 +70,8 @@
     </message>
     <message>
         <location filename="convert_dialog.py" line="110"/>
-        <source>ISAT annotations root</source>
-        <translation>ISAT标注文件路径</translation>
+        <source>SAMLabeler annotations root</source>
+        <translation>SAMLabeler标注文件路径</translation>
     </message>
     <message>
         <location filename="convert_dialog.py" line="111"/>
@@ -90,13 +90,18 @@
     </message>
     <message>
         <location filename="convert_dialog.py" line="114"/>
-        <source>Convert ISAT annotations to png.</source>
-        <translation>将ISAT标注文件转换为png图片.</translation>
+        <source>Convert SAMLabeler annotations to png.</source>
+        <translation>将SAMLabeler标注文件转换为png图片.</translation>
     </message>
     <message>
         <location filename="convert_dialog.py" line="116"/>
         <source>convert</source>
         <translation>转换</translation>
+    </message>
+    <message>
+        <location filename="MainWindow.py" line="401"/>
+        <source>Convert to COCO</source>
+        <translation>COCO格式标签转换工具</translation>
     </message>
     <message>
         <location filename="shortcut_dialog.py" line="262"/>
@@ -105,8 +110,8 @@
     </message>
     <message>
         <location filename="shortcut_dialog.py" line="487"/>
-        <source>ISAT</source>
-        <translation type="obsolete">ISAT 图片分割标注工具</translation>
+        <source>SAMLabeler</source>
+        <translation type="obsolete">SAMLabeler 图片分割标注工具</translation>
     </message>
     <message>
         <location filename="shortcut_dialog.py" line="488"/>
@@ -335,13 +340,12 @@
     </message>
     <message>
         <location filename="about_dialog.py" line="74"/>
-        <source>ISAT with Segment anything.</source>
-        <translation>ISAT集成Segment anything.</translation>
+        <source>SAMLabeler with Segment anything.</source>
+        <translation>ISSAMLabeler集成Segment anything.</translation>
     </message>
     <message>
         <location filename="about_dialog.py" line="75"/>
-        <source>ISAT Copyright (C) 2022 yatengLG.
-http://www.yatenglg.cn/isat</source>
+        <source>SAMLabeler Copyright (C) 2023. </source>
         <translation></translation>
     </message>
     <message>
@@ -487,8 +491,8 @@ http://www.yatenglg.cn/isat</source>
     <name>MainWindow</name>
     <message>
         <location filename="MainWindow.py" line="320"/>
-        <source>ISAT</source>
-        <translation>ISAT 图片分割标注工具</translation>
+        <source>SAMLabeler</source>
+        <translation>SAMLabeler 图片分割标注工具</translation>
     </message>
     <message>
         <location filename="MainWindow.py" line="321"/>
@@ -713,7 +717,7 @@ http://www.yatenglg.cn/isat</source>
     <message>
         <location filename="MainWindow.py" line="384"/>
         <source>Convert annotations to png image.</source>
-        <translation>将ISAT标注文件转换为png图片.</translation>
+        <translation>将SAMLabeler标注文件转换为png图片.</translation>
     </message>
     <message>
         <location filename="MainWindow.py" line="324"/>

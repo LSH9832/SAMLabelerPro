@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/super/PycharmProjects/ISAT_with_segment_anything/ui/about_dialog.ui'
+# Form implementation generated from reading ui file '/home/super/PycharmProjects/SAMLabeler_with_segment_anything/ui/about_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #
@@ -71,7 +71,7 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "about"))
         self.label.setText(_translate("Dialog", "About"))
-        self.label_2.setText(_translate("Dialog", "ISAT with Segment anything."))
-        self.label_4.setText(_translate("Dialog", "ISAT Copyright (C) 2022 yatengLG.\n"
-"http://www.yatenglg.cn/isat"))
+        self.label_2.setText(_translate("Dialog", "SAMLabeler with Segment anything."))
+        self.label_4.setText(_translate("Dialog", "SAMLabeler Copyright (C) 2022 yatengLG.LSH9832.\nhttp://github.com/LSH9832/SAMLabeler"))
+
 import icons_rc

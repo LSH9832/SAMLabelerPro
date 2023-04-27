@@ -103,13 +103,19 @@ class Ui_Dialog(object):
         self.pushButton_cache.setIcon(icon)
         self.pushButton_cache.setObjectName("pushButton_cache")
         self.horizontalLayout_2.addWidget(self.pushButton_cache)
-        self.pushButton_apply = QtWidgets.QPushButton(self.widget_2)
+        self.pushButton_apply = QtWidgets.QPushButton(self.widget_2)      # without id
         icon1 = QtGui.QIcon()
         icon1.addPixmap(QtGui.QPixmap(":/icons/icons/校验_check-one.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.pushButton_apply.setIcon(icon1)
         self.pushButton_apply.setObjectName("pushButton_apply")
         self.horizontalLayout_2.addWidget(self.pushButton_apply)
         self.verticalLayout.addWidget(self.widget_2)
+
+        self.pushButton_apply_q = QtWidgets.QPushButton(self.widget_2)    # with id and id not change
+        self.pushButton_apply_q.setObjectName("pushButton_apply_q")
+
+        self.pushButton_apply_w = QtWidgets.QPushButton(self.widget_2)    # with id and id += 1
+        self.pushButton_apply_w.setObjectName("pushButton_apply_w")
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -127,6 +133,10 @@ class Ui_Dialog(object):
         self.pushButton_cache.setShortcut(_translate("Dialog", "C"))
         self.pushButton_apply.setText(_translate("Dialog", "apply"))
         self.pushButton_apply.setShortcut(_translate("Dialog", "E"))
+
+        self.pushButton_apply_q.setShortcut(_translate("Dialog", "Q"))
+        self.pushButton_apply_w.setShortcut(_translate("Dialog", "W"))
+
 
 
 import icons_rc

@@ -28,14 +28,35 @@ import functools
 import imgviz
 from segment_any.segment_any import SegAny
 from segment_any.gpu_resource import GPUResource_Thread, osplatform
+from label2coco import LabelConverter
 import icons_rc
-
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
+
+        ######################################################
+        self.setWindowIcon(self.win_icon)
+        self._edit_setting_file = "settings/last_edit.yaml"
+        self.edit_data = {
+            "image_dir": None,
+            "label_dir": None,
+            "current_index": 0,
+            "half": True,
+            "cfg": "settings/coco.yaml" if osp.isfile("settings/coco.yaml") else CONFIG_FILE if osp.exists(CONFIG_FILE) else DEFAULT_CONFIG_FILE,
+            "force_model_type": None,
+            "first": True
+        }
+        if os.path.isfile("settings/last_edit.yaml"):
+            for k, v in yaml.load(open("settings/last_edit.yaml"), yaml.SafeLoader).items():
+                self.edit_data[k] = v
+        else:
+            os.makedirs("settings", exist_ok=True)
+            self.save_current_state()
+        ######################################################
+
         self.init_ui()
         self.image_root: str = None
         self.label_root: str = None
@@ -43,25 +64,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.files_list: list = []
         self.current_index = None
         self.current_file_index: int = None
-
-        ######################################################
-        self._edit_setting_file = "settings/last_edit.yaml"
-        self.edit_data = {
-            "image_dir": None,
-            "label_dir": None,
-            "current_index": 0,
-            "half": True,
-            "cfg": CONFIG_FILE if osp.exists(CONFIG_FILE) else DEFAULT_CONFIG_FILE,
-            "force_model_type": None
-        }
-        if os.path.isfile("settings/last_edit.yaml"):
-            for k, v in yaml.load(open("settings/last_edit.yaml"), yaml.SafeLoader).items():
-                self.edit_data[k] = v
-            # print(self.edit_data)
-        else:
-            os.makedirs("settings", exist_ok=True)
-            yaml.dump(self.edit_data, open(self._edit_setting_file, "w"), yaml.Dumper)
-        ######################################################
 
         self.config_file = self.edit_data.get("cfg")
         self.saved = True
@@ -90,6 +92,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if len(self.files_list) and self.current_index is not None:
             self.show_image(self.current_index)
 
+        if self.edit_data.get("first", True):
+            self.shortcut_dialog.show()
+            self.edit_data["first"] = False
+            self.save_current_state()
+
+    def save_current_state(self):
+        yaml.dump(self.edit_data, open(self._edit_setting_file, "w"), yaml.Dumper)
 
     def init_segment_anything(self):
 
@@ -146,6 +155,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.category_edit_widget = CategoryEditDialog(self, self, self.scene)
 
         self.convert_dialog = ConvertDialog(self, mainwindow=self)
+        self.convert_coco_win = LabelConverter(parent=self)
 
         self.view = AnnotationView(parent=self)
         self.view.setScene(self.scene)
@@ -241,7 +251,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if dir:
                 self.edit_data["image_dir"] = dir
                 # print(self.edit_data)
-                yaml.dump(self.edit_data, open(self._edit_setting_file, "w"), yaml.Dumper)
+                self.save_current_state()
                 # print("done")
         elif not os.path.isdir(dir):
             return
@@ -281,7 +291,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose Label Dir", start_dir)
             if dir:
                 self.edit_data["label_dir"] = dir
-                yaml.dump(self.edit_data, open(self._edit_setting_file, "w"), yaml.Dumper)
+                self.save_current_state()
         elif not os.path.isdir(dir):
             return
 
@@ -349,11 +359,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 # 载入数据
                 self.current_label.load_annotation()
 
+                last_id = 0
                 for object in self.current_label.objects:
+                    if object.category == self.category_choice_widget.last_category:
+                        if isinstance(object.group, str):
+                            if object.group.isdigit():
+                                object.group = int(object.group)
+
+                        if isinstance(object.group, int) and object.group > last_id:
+                            last_id = object.group
+
                     polygon = Polygon()
                     self.scene.addItem(polygon)
                     polygon.load_object(object)
                     self.polygons.append(polygon)
+
+                self.category_choice_widget.last_id = last_id
 
             if self.current_label is not None:
                 self.setWindowTitle(f'{DEFAULT_TITLE} - {self.current_label.label_path}')
@@ -365,7 +386,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.files_dock_widget.set_select(index)
             self.current_index = index
             self.edit_data["current_index"] = self.current_index
-            yaml.dump(self.edit_data, open(self._edit_setting_file, "w"), yaml.Dumper)
+            self.save_current_state()
             self.files_dock_widget.label_current.setText('{}'.format(self.current_index+1))
             self.load_finished = True
 
@@ -529,6 +550,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.convert_dialog.reset_gui()
         self.convert_dialog.show()
 
+    def convert_coco(self):
+        self.convert_coco_win.COCODistPath.clear()
+        self.convert_coco_win.COCOAnnoPath.clear()
+        self.convert_coco_win.image_path.setText(self.edit_data["image_dir"])
+        self.convert_coco_win.label_path.setText(self.edit_data["label_dir"])
+        self.convert_coco_win.open()
+
     def help(self):
         self.shortcut_dialog.show()
 
@@ -571,6 +599,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionVisible.triggered.connect(functools.partial(self.set_labels_visible, None))
 
         self.actionConverter.triggered.connect(self.label_converter)
+        self.actionConverter_coco.triggered.connect(self.convert_coco)
 
         self.actionShortcut.triggered.connect(self.help)
         self.actionAbout.triggered.connect(self.about)

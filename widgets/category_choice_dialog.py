@@ -29,7 +29,19 @@ class CategoryChoiceDialog(QtWidgets.QDialog, Ui_Dialog):
 
         #
         self.last_category = ""
+        self.last_id = 1
 
+        self.pushButton_apply_q.clicked.connect(self.apply_with_same_id)
+        self.pushButton_apply_w.clicked.connect(self.apply_with_next_id)
+
+    def apply_with_same_id(self):
+        self.lineEdit_group.setText(str(self.last_id))
+        self.apply()
+
+    def apply_with_next_id(self):
+        self.last_id += 1
+        self.lineEdit_group.setText(str(self.last_id))
+        self.apply()
 
     def load_cfg(self):
         self.listWidget.clear()
@@ -82,6 +94,8 @@ class CategoryChoiceDialog(QtWidgets.QDialog, Ui_Dialog):
     def apply(self):
         category = self.lineEdit_category.text()
         group = self.lineEdit_group.text()
+        if group.isdigit():
+            self.last_id = int(group)
         is_crowd = int(self.checkBox_iscrowded.isChecked())
         note = self.lineEdit_note.text()
         if not category:
