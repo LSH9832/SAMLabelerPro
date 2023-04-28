@@ -1,4 +1,4 @@
-# SAMLabeler Pro: 使用 [Segment Anyting Model](https://github.com/facebookresearch/segment-anything) 辅助的标签工具，支持远程多人同时标注
+# SAMLabeler Pro: 使用 [Segment Anyting Model](https://github.com/facebookresearch/segment-anything) 辅助的图像标注工具，支持远程多人同时标注
 
 ![image](https://user-images.githubusercontent.com/69880398/235150184-66a65060-aca7-47a8-a71f-c97656ea43bc.png)
 
