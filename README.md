@@ -1,5 +1,7 @@
 # SAMLabeler: 使用[Segment Anyting Model](https://github.com/facebookresearch/segment-anything)辅助的标签工具
 
+![image](https://user-images.githubusercontent.com/69880398/235150184-66a65060-aca7-47a8-a71f-c97656ea43bc.png)
+
 ## 注意
 - 本工具非原创，**魔改自[yatengLG](https://github.com/yatengLG)大佬的[ISAT_with_segment_anything](https://github.com/yatengLG/ISAT_with_segment_anything)，包含其所有功能**（截至2023年4月26日23:59），界面也相同，其功能使用方法请阅读该项目的[README.md](https://github.com/yatengLG/ISAT_with_segment_anything/blob/master/README.md)。再次感谢大佬的分享！
 - 使用本工具时为避免导入冲突，请务必不要在运行环境中安装SAM源码，本项目中的segment_anything文件夹便是作了一定改动的SAM源码。
@@ -7,7 +9,7 @@
 
 ## 1 即将更新（祝大家劳动节快乐）
 
-- 增加server模式，支持局域网内多人同时对服务器上的图片集进行标注（类似于我之前的项目[CoLabel](https://github.com/LSH9832/CoLabel)估计这个功能出来要比较久）
+- 增加server模式，支持局域网内多人同时对服务器上的图片集进行标注（类似于我之前的项目[CoLabel](https://github.com/LSH9832/CoLabel)，本地已经做出来了（见上图），正在优化，顺利的话这两天就上传）
 
 ## 2 相对于原版的新特性
 
