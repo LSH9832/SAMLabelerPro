@@ -1,4 +1,4 @@
-# SAMLabeler: 使用[Segment Anyting Model](https://github.com/facebookresearch/segment-anything)辅助的标签工具
+# SAMLabeler Pro: 使用 [Segment Anyting Model](https://github.com/facebookresearch/segment-anything) 辅助的标签工具，支持远程多人同时标注
 
 ![image](https://user-images.githubusercontent.com/69880398/235150184-66a65060-aca7-47a8-a71f-c97656ea43bc.png)
 
@@ -9,13 +9,16 @@
 
 ## 1 即将更新（祝大家劳动节快乐）
 
-- 增加server模式，支持局域网内多人同时对服务器上的图片集进行标注（类似于我之前的项目[CoLabel](https://github.com/LSH9832/CoLabel)，本地已经做出来了（见上图），正在优化，顺利的话这两天就上传）
+- 远程模式服务端的管理界面
 
 ## 2 相对于原版的新特性
 
-### 2.1 修复bug
+### 2.1 支持局域网内多人同时远程标注
 
-比如使用中文界面时导入标签后又会自动切换回英文界面等，如果发现其他bug请在Issues中留言
+当所有需要标注的图片在某一台电脑上时，可以通过启动服务端程序，使其他电脑能够通过本工具远程访问并进行标注，标注数据将保存至服务端配置文件中指定的文件夹。
+
+![image](https://user-images.githubusercontent.com/69880398/235212348-79245f9d-907a-481c-ad7f-52b79339592b.png)
+
 
 ### 2.2 半精度推理
 可以选择使用半精度推理，大幅减少显存消耗（最大的模型貌似是过拟合了还是怎么的，使用半精度效果奇差，本工具会强制使用全精度，但另外两个模型的半精度推理能够正常使用）
@@ -76,17 +79,56 @@ force_model_type: l   # 或 b
 
 增加了coco数据集、voc数据集、visdrone数据集、dota数据集的类别预设标签，均在settings文件夹下，可以通过设置导入
 
-
-
 ## 3 安装与运行
 
-- 首先把[模型](#22-半精度推理)下载下来
-- 然后torch和torchvision不用多说，按照pytorch官网[给出的步骤](https://pytorch.org/get-started/previous-versions/)安装， 然后
+### 3.1 客户端
+- 首先把本工具和[模型](#22-半精度推理)下载下来
+```shell
+git clone https://github.com/LSH9832/SAMLabelerPro.git
+cd SAMLabelerPro
+
+# （for linux）根据需求和设备性能选择性下载
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 ```
+- 然后torch和torchvision不用多说，按照pytorch官网[给出的步骤](https://pytorch.org/get-started/previous-versions/)安装， 然后
+```shell
 pip install -r requirements.txt
 python main.py
 ```
 即可。如果报错，见[注意](#注意)最后一条
+
+- 远程标注功能在“文件→远程模式设置”中，在打开远程模式前，需要先运行服务端。
+
+### 3.2服务端
+
+- 首先在服务端设备上下载本工具代码，然后打开“settings/server_settings.yaml”并进行修改，内容如下
+```yaml
+users:            # 所有可登录的用户信息，
+  admin:          # 用户名
+    pwd: admin    # 密码
+    image_path: "./example/images"         # 该用户登陆后需要标注的图片所在文件夹
+    label_path: "./example/images"         # 该用户标注的结果保存的文件夹
+    category_file: "./settings/coco.yaml"  # 该用户标注时使用的预设标签类别
+  user:
+    pwd: password
+    image_path: "./example/images"
+    label_path: "./example/images"
+    category_file: "./settings/coco.yaml"
+average: false                            # 是否平均分配，同一个文件夹分配多个人进行标注时，将图片平均分配，每个人只能访问自己分配到的图片，否则这些人能够访问所有图片
+```
+- 不同于客户端，服务端只需要安装两个第三方库即可运行，即
+```shell
+pip install flask pyyaml
+
+# host：可访问服务端的IP网段，0.0.0.0代表所有网段均可访问
+# port：该服务的端口
+python server.py --host 0.0.0.0 --port 12345
+```
+
+
+
 
 
 

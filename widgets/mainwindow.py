@@ -4,6 +4,7 @@ import time
 
 import numpy as np
 import yaml
+import json
 from glob import glob
 from PyQt5 import QtWidgets, QtCore, QtGui
 from ui.MainWindow import Ui_MainWindow
@@ -18,7 +19,8 @@ from widgets.shortcut_dialog import ShortcutDialog
 from widgets.about_dialog import AboutDialog
 from widgets.converter import ConvertDialog
 from widgets.canvas import AnnotationScene, AnnotationView
-from configs import STATUSMode, MAPMode, load_config, save_config, CONFIG_FILE, DEFAULT_CONFIG_FILE, DEFAULT_TITLE
+from widgets.remote_settings import RemoteSettings
+from configs import STATUSMode, MAPMode, load_config, save_config, CONFIG_FILE, DEFAULT_CONFIG_FILE, DEFAULT_TITLE, REMOTE_CONFIG_FILE
 from annotation import Object, Annotation
 from widgets.polygon import Polygon
 import os
@@ -30,6 +32,8 @@ from segment_any.segment_any import SegAny
 from segment_any.gpu_resource import GPUResource_Thread, osplatform
 from label2coco import LabelConverter
 import icons_rc
+
+import utils.remote as remote
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -47,14 +51,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "half": True,
             "cfg": "settings/coco.yaml" if osp.isfile("settings/coco.yaml") else CONFIG_FILE if osp.exists(CONFIG_FILE) else DEFAULT_CONFIG_FILE,
             "force_model_type": None,
-            "first": True
+            "first": True,
+            "remote": True,
+            "remote_data": {
+                "ip": "127.0.0.1",
+                "port": 12345,
+                "user": "admin",
+                "passwd": "admin",
+                "remote_index": 0
+            }
         }
         if os.path.isfile("settings/last_edit.yaml"):
             for k, v in yaml.load(open("settings/last_edit.yaml"), yaml.SafeLoader).items():
                 self.edit_data[k] = v
         else:
             os.makedirs("settings", exist_ok=True)
-            self.save_current_state()
+        self.save_current_state()
         ######################################################
 
         self.init_ui()
@@ -65,7 +77,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.current_index = None
         self.current_file_index: int = None
 
-        self.config_file = self.edit_data.get("cfg")
+        self.config_file = self.edit_data.get("cfg") if not self.edit_data["remote"] else REMOTE_CONFIG_FILE
         self.saved = True
         self.load_finished = False
         self.polygons: list = []
@@ -74,7 +86,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.instance_cmap = imgviz.label_colormap()
         self.map_mode = MAPMode.LABEL
         # 标注目标
-        self.current_label: (Annotation, None) = None
+        self.current_label: Annotation = None
 
         self.reload_cfg()
 
@@ -83,8 +95,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.setMinimumSize(1600, 900)
         self.view.setMinimumSize(1280, 720)
-        self.setWindowTitle(DEFAULT_TITLE)
+        self.setWindowTitle(DEFAULT_TITLE + self.title_with_remote())
         self.init_segment_anything()
+        self.reload_mode()
+
+    def reload_mode(self):
+        self.config_file = self.edit_data.get("cfg") if not self.edit_data["remote"] else REMOTE_CONFIG_FILE
         self.open_dir(dir=self.edit_data.get("image_dir"), show=False) if self.edit_data.get("image_dir") is not None else None
         self.save_dir(dir=self.edit_data.get("label_dir"), show=False) if self.edit_data.get("label_dir") is not None else None
 
@@ -96,6 +112,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.shortcut_dialog.show()
             self.edit_data["first"] = False
             self.save_current_state()
+
+        self.reload_cfg()
+
+    def title_with_remote(self):
+        return (f"(Remote Mode: {self.edit_data.get('remote_data').get('ip')}:"
+                f"{self.edit_data.get('remote_data').get('port')})"
+                if self.cfg["language"] == "en" else
+                f"(远程模式：{self.edit_data.get('remote_data').get('ip')}:"
+                f"{self.edit_data.get('remote_data').get('port')})") \
+            if self.edit_data["remote"] else \
+            ("(Local Mode)" if self.cfg["language"] == "en" else "(本地模式)")
 
     def save_current_state(self):
         yaml.dump(self.edit_data, open(self._edit_setting_file, "w"), yaml.Dumper)
@@ -140,6 +167,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def init_ui(self):
         self.setting_dialog = SettingDialog(parent=self, mainwindow=self)
+        self.remote_settings_win = RemoteSettings(parent=self)
 
         self.labels_dock_widget = LabelsDockWidget(mainwindow=self)
         self.labels_dock.setWidget(self.labels_dock_widget)
@@ -196,6 +224,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         _app = QtWidgets.QApplication.instance()
         _app.installTranslator(self.trans)
         self.retranslateUi(self)
+
         self.info_dock_widget.retranslateUi(self.info_dock_widget)
         self.labels_dock_widget.retranslateUi(self.labels_dock_widget)
         self.files_dock_widget.retranslateUi(self.files_dock_widget)
@@ -206,6 +235,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.shortcut_dialog.retranslateUi(self.shortcut_dialog)
         self.convert_dialog.retranslateUi(self.convert_dialog)
 
+        self.actionSetting.setText("Label Setting" if language == "en" else "标签设置")
+        self.actionSetting.setStatusTip("Label Setting." if language == "en" else "标签设置。")
+        self.actionRemoteSetting.setText("Remote Setting" if language == "en" else "远程模式设置")
+        self.actionRemoteSetting.setStatusTip("Remote Setting." if language == "en" else "远程模式设置。")
+
+
     def translate_to_chinese(self):
         self.translate('zh')
         self.cfg['language'] = 'zh'
@@ -215,8 +250,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cfg['language'] = 'en'
 
     def reload_cfg(self):
-        self.edit_data["cfg"] = self.config_file
-        self.cfg = load_config(self.config_file)
+
+        if not self.edit_data["remote"]:
+            self.edit_data["cfg"] = self.config_file
+        self.cfg = load_config(self.config_file if osp.isfile(self.config_file) else DEFAULT_CONFIG_FILE)
+        self.cfg["label"] = self.cfg.get('label', [])
+
+        if self.edit_data["remote"]:
+            remote_cfg = remote.get_categories(**self.edit_data["remote_data"])
+            if remote_cfg is not None:
+                exist_names = [cate["name"] for cate in self.cfg["label"]]
+                for category in remote_cfg["label"]:
+                    if category["name"] in exist_names:
+                        self.cfg["label"][exist_names.index(category["name"])] = category
+                    else:
+                        self.cfg["label"].append(category)
 
         language = self.cfg.get('language', 'en')
         self.translate(language)
@@ -237,11 +285,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.files_list is not None and self.current_index is not None:
 
             if is_saved:
-                self.setWindowTitle(f'{DEFAULT_TITLE} - {self.current_label.label_path}')
+                self.setWindowTitle(f'{DEFAULT_TITLE+self.title_with_remote()} - {self.current_label.label_path}')
             else:
-                self.setWindowTitle(f'{DEFAULT_TITLE} - *{self.current_label.label_path}')
+                self.setWindowTitle(f'{DEFAULT_TITLE+self.title_with_remote()} - *{self.current_label.label_path}')
 
     def open_dir(self, dir=None, show=True):
+        reset_index = dir is None and not self.edit_data["remote"]
+        if self.edit_data["remote"]:
+            remote_data = self.edit_data["remote_data"]
+            self.files_list = remote.get_image_list(**remote_data)
+            self.files_dock_widget.update_widget()
+            # print("远程获取完毕")
+            self.current_index = 0 if reset_index else self.edit_data["remote_data"].get("remote_index", 0) if self.edit_data["remote"] else self.edit_data.get("current_index", 0)
+            return
 
         # print(dir)
         start_dir = self.edit_data["image_dir"] or "./"
@@ -274,7 +330,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.files_dock_widget.update_widget()
 
-        self.current_index = self.edit_data.get("current_index") or 0
+        self.current_index = 0 if reset_index else self.edit_data.get("current_index", 0)
 
         self.image_root = dir
         self.actionOpen_dir.setStatusTip("Image root: {}".format(self.image_root))
@@ -312,10 +368,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.current_label.objects.append(object)
 
         self.current_label.note = self.info_dock_widget.lineEdit_note.text()
-        self.current_label.save_annotation()
-        self.set_saved_state(True)
 
-    def show_image(self, index:int):
+        if self.edit_data["remote"]:
+            anno_data = json.dumps(self.current_label.to_dict())
+
+            success, reason = remote.save_label(
+                name=self.current_label.img_name,
+                label_data=anno_data,
+                **self.edit_data["remote_data"]
+            )
+            if not success and reason is not None:
+                QtWidgets.QMessageBox.warning(self, 'Error', reason)
+            else:
+                self.set_saved_state(True)
+        else:
+            self.current_label.save_annotation()
+            self.set_saved_state(True)
+
+    def show_image(self, index: int):
         self.reset_action()
         self.current_label = None
         self.load_finished = False
@@ -328,8 +398,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.polygons.clear()
             self.labels_dock_widget.listWidget.clear()
             self.scene.cancel_draw()
-            file_path = os.path.join(self.image_root, os.path.basename(self.files_list[index])).replace("\\", "/")
-            image_data = Image.open(file_path)
+
+            if self.edit_data["remote"]:
+                file_path = self.files_list[index]
+                success, image_data = remote.get_image(name=file_path, **self.edit_data["remote_data"])
+                if not success:
+                    QtWidgets.QMessageBox.warning(self, 'Error', image_data)
+                    return
+            else:
+                file_path = os.path.join(self.image_root, os.path.basename(self.files_list[index])).replace("\\", "/")
+                image_data = Image.open(file_path)
 
             self.png_palette = image_data.getpalette()
             if self.png_palette is not None:
@@ -344,20 +422,37 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.actionSave.setEnabled(True)
                 self.actionBit_map.setEnabled(True)
 
-
             t0 = time.time()
-
             self.scene.load_image(file_path, image_data)
             # print(f"load image time: {time.time()-t0}s")
             self.view.zoomfit()
 
             # load label
             if self.png_palette is None:
-                _, name = os.path.split(file_path)
-                label_path = os.path.join(self.label_root, '.'.join(name.split('.')[:-1]) + '.json').replace("\\", "/")
-                self.current_label = Annotation(file_path, label_path)
-                # 载入数据
-                self.current_label.load_annotation()
+                if self.edit_data["remote"]:
+                    label_path = file_path.split(".")[0] + ".json"
+                    label_data = remote.get_label(name=file_path, **self.edit_data["remote_data"])
+                    if label_data is None:
+                        return
+
+                    # print("load remote label")
+                    self.current_label = Annotation(file_path, label_path, image_data, True)
+                    # print("load remote label from dict")
+                    try:
+                        self.current_label.load_from_dict(label_data)
+                    except:
+                        pass
+                    # print("end load remote label")
+
+
+                else:
+                    _, name = os.path.split(file_path)
+                    label_path = os.path.join(self.label_root, '.'.join(name.split('.')[:-1]) + '.json').replace("\\", "/")
+                    self.current_label = Annotation(file_path, label_path)
+                    # 载入数据
+                    self.current_label.load_annotation()
+
+
 
                 last_id = 0
                 for object in self.current_label.objects:
@@ -377,21 +472,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.category_choice_widget.last_id = last_id
 
             if self.current_label is not None:
-                self.setWindowTitle(f'{DEFAULT_TITLE} - {self.current_label.label_path}')
+                self.setWindowTitle(f'{DEFAULT_TITLE+self.title_with_remote()} - {self.current_label.label_path}')
             else:
-                self.setWindowTitle(f'{DEFAULT_TITLE} - {file_path}')
+                self.setWindowTitle(f'{DEFAULT_TITLE+self.title_with_remote()} - {file_path}')
 
             self.labels_dock_widget.update_listwidget()
             self.info_dock_widget.update_widget()
             self.files_dock_widget.set_select(index)
             self.current_index = index
-            self.edit_data["current_index"] = self.current_index
+            if self.edit_data["remote"]:
+                self.edit_data["remote_data"]["remote_index"] = self.current_index
+            else:
+                self.edit_data["current_index"] = self.current_index
             self.save_current_state()
             self.files_dock_widget.label_current.setText('{}'.format(self.current_index+1))
             self.load_finished = True
 
         except Exception as e:
-            print(e)
+            print("ERROR:", e)
+            raise
         finally:
             if self.current_index > 0:
                 self.actionPrev.setEnabled(True)
@@ -580,6 +679,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionNext.triggered.connect(self.next_image)
         self.actionSetting.triggered.connect(self.setting)
         self.actionExit.triggered.connect(self.exit)
+        self.actionRemoteSetting.triggered.connect(self.remote_settings_win.show)
 
         self.actionSegment_anything.triggered.connect(self.scene.start_segment_anything)
         self.actionPolygon.triggered.connect(self.scene.start_draw_polygon)

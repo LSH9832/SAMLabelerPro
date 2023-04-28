@@ -134,11 +134,18 @@ class Ui_MainWindow(object):
         icon5.addPixmap(QtGui.QPixmap(":/icon/icons/全宽_fullwidth.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionFit_wiondow.setIcon(icon5)
         self.actionFit_wiondow.setObjectName("actionFit_wiondow")
+
+
         self.actionSetting = QtWidgets.QAction(MainWindow)
         icon6 = QtGui.QIcon()
         icon6.addPixmap(QtGui.QPixmap(":/icon/icons/设置_setting-two.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionSetting.setIcon(icon6)
         self.actionSetting.setObjectName("actionSetting")
+
+        self.actionRemoteSetting = QtWidgets.QAction(MainWindow)
+        self.actionRemoteSetting.setIcon(icon6)
+        self.actionRemoteSetting.setObjectName("actionRemoteSetting")
+
         self.actionExit = QtWidgets.QAction(MainWindow)
         icon7 = QtGui.QIcon()
         icon7.addPixmap(QtGui.QPixmap(":/icon/icons/开关_power.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -272,6 +279,7 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionPrev)
         self.menuFile.addAction(self.actionNext)
         self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionRemoteSetting)
         self.menuFile.addAction(self.actionSetting)
         self.menuFile.addAction(self.actionExit)
         self.menuView.addSeparator()
@@ -355,6 +363,8 @@ class Ui_MainWindow(object):
         self.actionFit_wiondow.setShortcut(_translate("MainWindow", "F"))
         self.actionSetting.setText(_translate("MainWindow", "Setting"))
         self.actionSetting.setStatusTip(_translate("MainWindow", "Setting."))
+        # self.actionRemoteSetting.setText(_translate("MainWindow", "Remote Setting"))
+        # self.actionRemoteSetting.setStatusTip(_translate("MainWindow", "Remote Setting."))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionExit.setToolTip(_translate("MainWindow", "Exit"))
         self.actionExit.setStatusTip(_translate("MainWindow", "Exit."))

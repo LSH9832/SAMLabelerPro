@@ -9,5 +9,7 @@ torch
 torchvision
 pycocotools
 matplotlib
+requests
+flask   # only server need this.
 # onnxruntime
 # onnx

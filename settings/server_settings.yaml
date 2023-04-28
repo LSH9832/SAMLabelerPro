@@ -1,0 +1,13 @@
+users:
+  admin:
+    pwd: admin
+    image_path: "./example/images"
+    label_path: "./example/images"
+    category_file: "./settings/coco.yaml"
+  user:
+    pwd: password
+    image_path: "./example/images"
+    label_path: "./example/images"
+    category_file: "./settings/coco.yaml"
+average: false
+# average means assigning the same number of images to each user working in a same image path.

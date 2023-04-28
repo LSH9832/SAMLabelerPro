@@ -21,14 +21,24 @@ class Object:
 
 
 class Annotation:
-    def __init__(self, image_path, label_path):
-        img_folder, img_name = os.path.split(image_path)
-        self.description = 'ISAT'
-        self.img_folder = img_folder
-        self.img_name = img_name
-        self.label_path = label_path
-        self.note = ''
-        image = np.array(Image.open(image_path))
+    def __init__(self, image_path, label_path, image=None, remote=False):
+
+        self.description = 'SAMLabeler'
+        self.remote = remote
+        if remote:
+            self.img_folder = ""
+            self.img_name = image_path
+            self.label_path = label_path
+            self.note = ''
+            image = np.array(image)
+        else:
+            img_folder, img_name = os.path.split(image_path)
+            self.img_folder = img_folder
+            self.img_name = img_name
+            self.label_path = label_path
+            self.note = ''
+            image = np.array(Image.open(image_path) if image is None else image)
+
         if image.ndim == 3:
             self.height, self.width, self.depth = image.shape
         elif image.ndim == 2:
@@ -39,61 +49,64 @@ class Annotation:
             print('Warning: Except image has 2 or 3 ndim, but get {}.'.format(image.ndim))
         del image
 
-        self.objects:List[Object,...] = []
+        self.objects: List[Object,...] = []
+
+    def load_from_dict(self, dataset):
+        info = dataset.get('info', {})
+        description = info.get('description', '')
+        if description in ['ISAT', 'SAMLabeler']:
+            # ISAT格式json
+            objects = dataset.get('objects', [])
+            self.img_name = info.get('name', '')
+            width = info.get('width', None)
+            if width is not None:
+                self.width = width
+            height = info.get('height', None)
+            if height is not None:
+                self.height = height
+            depth = info.get('depth', None)
+            if depth is not None:
+                self.depth = depth
+            self.note = info.get('note', '')
+            for obj in objects:
+                category = obj.get('category', 'unknow')
+                group = obj.get('group', 0)
+                if group is None: group = 0
+                segmentation = obj.get('segmentation', [])
+                iscrowd = obj.get('iscrowd', 0)
+                note = obj.get('note', '')
+                area = obj.get('area', 0)
+                layer = obj.get('layer', 2)
+                bbox = obj.get('bbox', [])
+                obj = Object(category, group, segmentation, area, layer, bbox, iscrowd, note)
+                self.objects.append(obj)
+        else:
+            # labelme格式json
+            shapes = dataset.get('shapes', {})
+            for shape in shapes:
+                # 只加载多边形
+                is_polygon = shape.get('shape_type', '') == 'polygon'
+                if not is_polygon:
+                    continue
+                category = shape.get('label', 'unknow')
+                group = shape.get('group_id', 0)
+                if group is None: group = 0
+                segmentation = shape.get('points', [])
+                iscrowd = shape.get('iscrowd', 0)
+                note = shape.get('note', '')
+                area = shape.get('area', 0)
+                layer = shape.get('layer', 2)
+                bbox = shape.get('bbox', [])
+                obj = Object(category, group, segmentation, area, layer, bbox, iscrowd, note)
+                self.objects.append(obj)
 
     def load_annotation(self):
         if os.path.exists(self.label_path):
             with open(self.label_path, 'r') as f:
                 dataset = load(f)
-                info = dataset.get('info', {})
-                description = info.get('description', '')
-                if description == 'ISAT':
-                    # ISAT格式json
-                    objects = dataset.get('objects', [])
-                    self.img_name = info.get('name', '')
-                    width = info.get('width', None)
-                    if width is not None:
-                        self.width = width
-                    height = info.get('height', None)
-                    if height is not None:
-                        self.height = height
-                    depth = info.get('depth', None)
-                    if depth is not None:
-                        self.depth = depth
-                    self.note = info.get('note', '')
-                    for obj in objects:
-                        category = obj.get('category', 'unknow')
-                        group = obj.get('group', 0)
-                        if group is None: group = 0
-                        segmentation = obj.get('segmentation', [])
-                        iscrowd = obj.get('iscrowd', 0)
-                        note = obj.get('note', '')
-                        area = obj.get('area', 0)
-                        layer = obj.get('layer', 2)
-                        bbox = obj.get('bbox', [])
-                        obj = Object(category, group, segmentation, area, layer, bbox, iscrowd, note)
-                        self.objects.append(obj)
-                else:
-                    # labelme格式json
-                    shapes = dataset.get('shapes', {})
-                    for shape in shapes:
-                        # 只加载多边形
-                        is_polygon = shape.get('shape_type', '') == 'polygon'
-                        if not is_polygon:
-                            continue
-                        category = shape.get('label', 'unknow')
-                        group = shape.get('group_id', 0)
-                        if group is None: group = 0
-                        segmentation = shape.get('points', [])
-                        iscrowd = shape.get('iscrowd', 0)
-                        note = shape.get('note', '')
-                        area = shape.get('area', 0)
-                        layer = shape.get('layer', 2)
-                        bbox = shape.get('bbox', [])
-                        obj = Object(category, group, segmentation, area, layer, bbox, iscrowd, note)
-                        self.objects.append(obj)
+                self.load_from_dict(dataset)
 
-    def save_annotation(self):
+    def to_dict(self):
         dataset = {}
         dataset['info'] = {}
         dataset['info']['description'] = self.description
@@ -115,6 +128,9 @@ class Annotation:
             object['iscrowd'] = obj.iscrowd
             object['note'] = obj.note
             dataset['objects'].append(object)
+        return dataset
+
+    def save_annotation(self):
         with open(self.label_path, 'w') as f:
-            dump(dataset, f, indent=4)
+            dump(self.to_dict(), f)  # , indent=4)  # 节约空间
         return True
