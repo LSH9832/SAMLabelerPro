@@ -340,7 +340,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "ISAT"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "SAMLabeler Pro"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuView.setTitle(_translate("MainWindow", "View"))
         self.menuAbout.setTitle(_translate("MainWindow", "Help"))

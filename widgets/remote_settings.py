@@ -52,8 +52,8 @@ class RemoteSettings(QtWidgets.QMainWindow):  # , labelConverter
                 self.parent.edit_data["remote_data"][k] = v
             self.parent.save_current_state()
             print(self.parent.edit_data["remote_data"])
-
             self.parent.reload_mode()
+
         else:
             if osp.isfile("../settings/last_edit.yaml"):
                 data = yaml.load(open("../settings/last_edit.yaml"), yaml.SafeLoader)

@@ -20,7 +20,17 @@ from widgets.about_dialog import AboutDialog
 from widgets.converter import ConvertDialog
 from widgets.canvas import AnnotationScene, AnnotationView
 from widgets.remote_settings import RemoteSettings
-from configs import STATUSMode, MAPMode, load_config, save_config, CONFIG_FILE, DEFAULT_CONFIG_FILE, DEFAULT_TITLE, REMOTE_CONFIG_FILE
+from configs import (
+    STATUSMode,
+    MAPMode,
+    load_config,
+    save_config,
+    CONFIG_FILE,
+    DEFAULT_CONFIG_FILE,
+    DEFAULT_TITLE,
+    REMOTE_CONFIG_FILE,
+    DEFAULT_EDIT_CONFIG
+)
 from annotation import Object, Annotation
 from widgets.polygon import Polygon
 import os
@@ -43,7 +53,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         ######################################################
         self.setWindowIcon(self.win_icon)
-        self._edit_setting_file = "settings/last_edit.yaml"
+        self._edit_setting_file = DEFAULT_EDIT_CONFIG   # "settings/last_edit.yaml"
         self.edit_data = {
             "image_dir": None,
             "label_dir": None,
@@ -52,7 +62,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "cfg": "settings/coco.yaml" if osp.isfile("settings/coco.yaml") else CONFIG_FILE if osp.exists(CONFIG_FILE) else DEFAULT_CONFIG_FILE,
             "force_model_type": None,
             "first": True,
-            "remote": True,
+            "remote": False,
             "remote_data": {
                 "ip": "127.0.0.1",
                 "port": 12345,
@@ -61,8 +71,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 "remote_index": 0
             }
         }
-        if os.path.isfile("settings/last_edit.yaml"):
-            for k, v in yaml.load(open("settings/last_edit.yaml"), yaml.SafeLoader).items():
+        if os.path.isfile(self._edit_setting_file):
+            for k, v in yaml.load(open(self._edit_setting_file), yaml.SafeLoader).items():
                 self.edit_data[k] = v
         else:
             os.makedirs("settings", exist_ok=True)
@@ -106,8 +116,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def reload_mode(self):
         self.config_file = self.edit_data.get("cfg") if not self.edit_data["remote"] else REMOTE_CONFIG_FILE
-        self.open_dir(dir=self.edit_data.get("image_dir"), show=False) if self.edit_data.get("image_dir") is not None else None
-        self.save_dir(dir=self.edit_data.get("label_dir"), show=False) if self.edit_data.get("label_dir") is not None else None
+
+        if self.edit_data.get("image_dir") is not None or self.edit_data["remote"]:
+            self.open_dir(dir=self.edit_data.get("image_dir"), show=False)
+            if not self.edit_data["remote"]:
+                self.save_dir(dir=self.edit_data.get("label_dir"), show=False)
 
         self.setVisible(True)
         if len(self.files_list) and self.current_index is not None:
@@ -119,6 +132,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.save_current_state()
 
         self.reload_cfg()
+        self.actionOpen_dir.setEnabled(not self.edit_data["remote"])
+        self.actionSave_dir.setEnabled(not self.edit_data["remote"])
 
     def title_with_remote(self):
         self.cfg["language"] = self.cfg.get("language", "en")
@@ -302,7 +317,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             remote_data = self.edit_data["remote_data"]
             self.files_list = remote.get_image_list(**remote_data)
             self.files_dock_widget.update_widget()
-            # print("远程获取完毕")
+            print("远程获取完毕")
             self.current_index = 0 if reset_index else self.edit_data["remote_data"].get("remote_index", 0) if self.edit_data["remote"] else self.edit_data.get("current_index", 0)
             return
 

@@ -1,11 +1,16 @@
 import yaml
 from enum import Enum
+import os
 
 DEFAULT_TITLE = "SAMLabeler Pro"
+
 DEFAULT_CONFIG_FILE = 'settings/init.yaml'
 CONFIG_FILE = 'settings/default.yaml'
 REMOTE_CONFIG_FILE = 'settings/remote.yaml'
+DEFAULT_EDIT_CONFIG = "cache/last_edit.yaml"
 
+os.makedirs("cache", exist_ok=True)
+os.makedirs("settings", exist_ok=True)
 
 def load_config(file):
     with open(file, 'rb')as f:
