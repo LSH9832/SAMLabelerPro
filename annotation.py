@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Author  : LG
-
 import os
 from PIL import Image
 import numpy as np
