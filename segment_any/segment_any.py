@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Author  : LG
-
 from segment_anything import sam_model_registry, SamPredictor
 import torch
 import numpy as np
