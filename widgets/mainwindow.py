@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-# @Author  : LG
 import time
-
 import numpy as np
 import yaml
 import json
@@ -317,7 +314,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             remote_data = self.edit_data["remote_data"]
             self.files_list = remote.get_image_list(**remote_data)
             self.files_dock_widget.update_widget()
-            print("远程获取完毕")
+            # print("远程获取完毕")
             self.current_index = 0 if reset_index else self.edit_data["remote_data"].get("remote_index", 0) if self.edit_data["remote"] else self.edit_data.get("current_index", 0)
             return
 
@@ -377,7 +374,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.label_root = dir
             self.actionSave_dir.setStatusTip("Label root: {}".format(self.label_root))
 
-        # 刷新图片
         if self.current_index is not None and show:
             self.show_image(self.current_index)
 
