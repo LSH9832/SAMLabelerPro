@@ -224,8 +224,8 @@ def save_label():
             data = args.get("label_data", None)
             if data is not None:
                 data = json.loads(data)
-                data["info"]["note"] = f'(Edit by user "{args.get("user", None)}" at ' \
-                                       f'{datetime.datetime.now().strftime("%Y-%m-%D %H:%M:%S, %A %B")})'
+                data["info"]["note"] = f'(Last Edit: user "{args.get("user", None)}" at ' \
+                                       f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})'   # , %A %B
                 json.dump(data, open(json_path, "w"))
                 return {"success": True}
             else:

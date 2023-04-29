@@ -108,13 +108,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # print(self.cfg)
         self.setWindowTitle(DEFAULT_TITLE + self.title_with_remote())
         self.init_segment_anything()
-        self.reload_mode()
+        self.reload_mode(False)
 
         self.heart_beat_timer = QtCore.QTimer(self)
         self.heart_beat_timer.timeout.connect(self.__heart_beat)
         self.heart_beat_timer.start(2000)
 
-    def reload_mode(self):
+    def reload_mode(self, reload_config=True):
         self.config_file = self.edit_data.get("cfg") if not self.edit_data["remote"] else REMOTE_CONFIG_FILE
 
         if self.edit_data.get("image_dir") is not None or self.edit_data["remote"]:
@@ -130,8 +130,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.shortcut_dialog.show()
             self.edit_data["first"] = False
             self.save_current_state()
-
-        self.reload_cfg()
+        if reload_config:
+            self.reload_cfg()
         self.actionOpen_dir.setEnabled(not self.edit_data["remote"])
         self.actionSave_dir.setEnabled(not self.edit_data["remote"])
 
@@ -537,7 +537,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print("ERROR:", e)
             raise
         finally:
-            return 
+            return
             # if self.current_index > 0:
             #     self.actionPrev.setEnabled(True)
             # else:
@@ -553,9 +553,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         if self.current_index is None:
             return
-        
+
         idx_before_change = self.current_index
-        
+
         if not self.saved:
             self.heart_beat_timer.stop()
             result = QtWidgets.QMessageBox.question(self, 'Warning', 'Proceed without saved?', QtWidgets.QMessageBox.StandardButton.Yes|QtWidgets.QMessageBox.StandardButton.No, QtWidgets.QMessageBox.StandardButton.No)
@@ -590,7 +590,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
 
         idx_before_change = self.current_index
-        
+
         if not self.saved:
             self.heart_beat_timer.stop()
             result = QtWidgets.QMessageBox.question(
