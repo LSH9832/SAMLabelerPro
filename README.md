@@ -1,6 +1,6 @@
 # SAMLabeler Pro: 使用 [Segment Anyting Model](https://github.com/facebookresearch/segment-anything) 辅助的图像标注工具，支持远程多人同时标注
 
-![image](https://user-images.githubusercontent.com/69880398/235150184-66a65060-aca7-47a8-a71f-c97656ea43bc.png)
+![image](https://user-images.githubusercontent.com/69880398/235317010-2ec560cf-1de9-436d-81a4-79654e533de1.png)
 
 ## 注意
 - 本工具非原创，**魔改自[yatengLG](https://github.com/yatengLG)大佬的[ISAT_with_segment_anything](https://github.com/yatengLG/ISAT_with_segment_anything)，包含其所有功能**（截至2023年4月26日23:59），界面也相同，其功能使用方法请阅读该项目的[README.md](https://github.com/yatengLG/ISAT_with_segment_anything/blob/master/README.md)。再次感谢大佬的分享！
