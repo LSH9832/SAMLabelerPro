@@ -47,9 +47,6 @@ def get_label(ip, port, **kwargs):
 def save_label(ip, port, **kwargs):
     url = f"http://{ip}:{port}/save_label"
     req = requests.get(url, kwargs)
-
-    # print(kwargs["label_data"])
-    # print(req.text)
     return req.json().get("success", False), req.json().get("error", None)
 
 
@@ -57,6 +54,13 @@ def test_connect(ip, port, **kwargs):
     url = f"http://{ip}:{port}/test_connect"
     req = requests.get(url, kwargs)
     return req.json().get("data", False), req.json().get("error", None)
+
+
+def heart_beat(ip, port, **kwargs):
+    url = f"http://{ip}:{port}/heart_beat"
+    req = requests.get(url, kwargs)
+    return req.json().get("data", False), req.json().get("error", None)
+
 
 
 if __name__ == '__main__':

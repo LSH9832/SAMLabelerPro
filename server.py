@@ -5,6 +5,7 @@ import os.path as osp
 import yaml
 import json
 import datetime
+from time import time
 import argparse
 
 
@@ -25,6 +26,25 @@ suffixs = ('bmp', 'cur', 'gif', 'icns', 'ico', 'jpeg', 'jpg', 'pbm', 'pgm', 'png
 def get_server_data():
     return yaml.load(open("settings/server_settings.yaml"), yaml.SafeLoader)
 
+def get_cache_data():
+    if osp.isfile("cache/heart_beat.yaml"):
+        return yaml.load(open("cache/heart_beat.yaml"), yaml.SafeLoader)
+    else:
+        return {}
+
+def save_cache_data(data):
+
+    state_to_remove = []
+    for k, v in data.items():
+        if time() - v["time"] > 10:
+            state_to_remove.append(k)
+
+    for name in state_to_remove:
+        data.pop(name)
+
+    os.makedirs("cache", exist_ok=True)
+    with open("cache/heart_beat.yaml", "w") as f:
+        yaml.dump(data, f, yaml.Dumper)
 
 def check_(user, pwd):
     users_list = get_server_data()["users"]
@@ -138,6 +158,48 @@ def test_connect():
     if not check_(args.get("user", None), args.get("passwd", None)):
         return {"data": False, "error": "user or passwd is wrong"}
     return {"data": True}
+
+
+@app.route("/heart_beat", methods=["GET", "POST"])
+def heart_beat():
+    args = get_args()
+    if not check_(args.get("user", None), args.get("passwd", None)):
+        return {"data": False, "error": "user or passwd is wrong"}
+
+    server_data = get_server_data()
+    image_path = server_data["users"][args.get("user")]["image_path"]
+
+    file = osp.join(image_path, args.get("name", "no_implement"))
+    if osp.isfile(file):
+        hb_data = get_cache_data()
+        accessable = True
+        current_user = None
+        if file in hb_data:
+            if not hb_data[file]["user"] == args.get("user"):
+                if time() - hb_data[file]["time"] < 10:
+                    current_user = hb_data[file]["user"]
+                    accessable = False
+
+        if accessable:
+            to_remove = []
+            for k, v in hb_data.items():
+                if not k == file:
+                    if v["user"] == args.get("user"):
+                        to_remove.append(k)
+
+            for name in to_remove:
+                hb_data.pop(name)
+
+            hb_data[file] = {
+                "user": args.get("user"),
+                "time": time()
+            }
+            save_cache_data(hb_data)
+            return {"data": True}
+        else:
+            return {"data": False, "error": f"用户 '{current_user}' 正在编辑 {args.get('name')}"}
+    else:
+        return {"data": False, "error": f"no such file named {args.get('name')}"}
 
 
 @app.route("/save_label", methods=["GET", "POST"])

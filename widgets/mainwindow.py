@@ -95,9 +95,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.setMinimumSize(1600, 900)
         self.view.setMinimumSize(1280, 720)
+        # print(self.cfg)
         self.setWindowTitle(DEFAULT_TITLE + self.title_with_remote())
         self.init_segment_anything()
         self.reload_mode()
+
+        self.heart_beat_timer = QtCore.QTimer(self)
+        self.heart_beat_timer.timeout.connect(self.__heart_beat)
+        self.heart_beat_timer.start(2000)
 
     def reload_mode(self):
         self.config_file = self.edit_data.get("cfg") if not self.edit_data["remote"] else REMOTE_CONFIG_FILE
@@ -116,13 +121,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.reload_cfg()
 
     def title_with_remote(self):
+        self.cfg["language"] = self.cfg.get("language", "en")
         return (f"(Remote Mode: {self.edit_data.get('remote_data').get('ip')}:"
                 f"{self.edit_data.get('remote_data').get('port')})"
                 if self.cfg["language"] == "en" else
                 f"(远程模式：{self.edit_data.get('remote_data').get('ip')}:"
                 f"{self.edit_data.get('remote_data').get('port')})") \
             if self.edit_data["remote"] else \
-            ("(Local Mode)" if self.cfg["language"] == "en" else "(本地模式)")
+            ("(Local Mode)" if self.cfg.get("language", "en") == "en" else "(本地模式)")
 
     def save_current_state(self):
         yaml.dump(self.edit_data, open(self._edit_setting_file, "w"), yaml.Dumper)
@@ -149,11 +155,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if not self.use_segment_anything:
             websites = 'https://github.com/facebookresearch/segment-anything#model-checkpoints'
+            self.heart_beat_timer.stop()
             QtWidgets.QMessageBox.warning(
                 self, 'Warning',
                 f'The checkpoint of [Segment anything] not existed. If you want use quick annotate, '
                 f'please download from {websites}'
             )
+            self.heart_beat_timer.start(2000)
 
         if self.use_segment_anything:
             if self.segany.device != 'cpu':
@@ -239,7 +247,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionSetting.setStatusTip("Label Setting." if language == "en" else "标签设置。")
         self.actionRemoteSetting.setText("Remote Setting" if language == "en" else "远程模式设置")
         self.actionRemoteSetting.setStatusTip("Remote Setting." if language == "en" else "远程模式设置。")
-
 
     def translate_to_chinese(self):
         self.translate('zh')
@@ -378,7 +385,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 **self.edit_data["remote_data"]
             )
             if not success and reason is not None:
+                self.heart_beat_timer.stop()
                 QtWidgets.QMessageBox.warning(self, 'Error', reason)
+                self.heart_beat_timer.start(2000)
             else:
                 self.set_saved_state(True)
         else:
@@ -386,6 +395,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.set_saved_state(True)
 
     def show_image(self, index: int):
+
+        if self.edit_data["remote"]:
+            if -1 < index < len(self.files_list):
+                file_path = self.files_list[index]
+                success, reason = remote.heart_beat(name=file_path, **self.edit_data["remote_data"])
+                if not success:
+                    self.heart_beat_timer.stop()
+                    result = QtWidgets.QMessageBox.question(
+                        self,
+                        'Warning',
+                        reason + "\n是否仍然尝试加载？",
+                        QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                        QtWidgets.QMessageBox.StandardButton.No
+                    )
+                    self.heart_beat_timer.start(2000)
+                    if result == QtWidgets.QMessageBox.StandardButton.No:
+                        return
+
         self.reset_action()
         self.current_label = None
         self.load_finished = False
@@ -401,9 +428,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             if self.edit_data["remote"]:
                 file_path = self.files_list[index]
+
                 success, image_data = remote.get_image(name=file_path, **self.edit_data["remote_data"])
                 if not success:
+                    self.heart_beat_timer.stop()
                     QtWidgets.QMessageBox.warning(self, 'Error', image_data)
+                    self.heart_beat_timer.start(2000)
                     return
             else:
                 file_path = os.path.join(self.image_root, os.path.basename(self.files_list[index])).replace("\\", "/")
@@ -492,15 +522,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print("ERROR:", e)
             raise
         finally:
-            if self.current_index > 0:
-                self.actionPrev.setEnabled(True)
-            else:
-                self.actionPrev.setEnabled(False)
-
-            if self.current_index < len(self.files_list) - 1:
-                self.actionNext.setEnabled(True)
-            else:
-                self.actionNext.setEnabled(False)
+            pass
+            # if self.current_index > 0:
+            #     self.actionPrev.setEnabled(True)
+            # else:
+            #     self.actionPrev.setEnabled(False)
+            #
+            # if self.current_index < len(self.files_list) - 1:
+            #     self.actionNext.setEnabled(True)
+            # else:
+            #     self.actionNext.setEnabled(False)
 
     def prev_image(self):
         if self.scene.mode != STATUSMode.VIEW:
@@ -508,31 +539,65 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.current_index is None:
             return
         if not self.saved:
+            self.heart_beat_timer.stop()
             result = QtWidgets.QMessageBox.question(self, 'Warning', 'Proceed without saved?', QtWidgets.QMessageBox.StandardButton.Yes|QtWidgets.QMessageBox.StandardButton.No, QtWidgets.QMessageBox.StandardButton.No)
+            self.heart_beat_timer.start(2000)
             if result == QtWidgets.QMessageBox.StandardButton.No:
                 return
         self.current_index = self.current_index - 1
         if self.current_index < 0:
             self.current_index = 0
-            QtWidgets.QMessageBox.warning(self, 'Warning', 'This is the first picture.')
-        else:
-            self.show_image(self.current_index)
+            self.heart_beat_timer.stop()
+            result = QtWidgets.QMessageBox.question(
+                self,
+                'Warning',
+                'This is the first picture. Jump to the last picture?',
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No
+            )
+            self.heart_beat_timer.start(2000)
+            if result == QtWidgets.QMessageBox.StandardButton.No:
+                return
+            self.current_index = len(self.files_list) - 1
+        self.show_image(self.current_index)
 
     def next_image(self):
+
+        # print(1, self.current_index, len(self.files_list))
         if self.scene.mode != STATUSMode.VIEW:
             return
         if self.current_index is None:
             return
         if not self.saved:
-            result = QtWidgets.QMessageBox.question(self, 'Warning', 'Proceed without saved?', QtWidgets.QMessageBox.StandardButton.Yes|QtWidgets.QMessageBox.StandardButton.No, QtWidgets.QMessageBox.StandardButton.No)
+            self.heart_beat_timer.stop()
+            result = QtWidgets.QMessageBox.question(
+                self,
+                'Warning',
+                'Proceed without saved?',
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No
+            )
+            self.heart_beat_timer.start(2000)
             if result == QtWidgets.QMessageBox.StandardButton.No:
                 return
         self.current_index = self.current_index + 1
-        if self.current_index > len(self.files_list)-1:
-            self.current_index = len(self.files_list)-1
-            QtWidgets.QMessageBox.warning(self, 'Warning', 'This is the last picture.')
-        else:
-            self.show_image(self.current_index)
+
+        # print(2, self.current_index, len(self.files_list))
+
+        if self.current_index > len(self.files_list)-1 and len(self.files_list) > 1:
+            self.heart_beat_timer.stop()
+            result = QtWidgets.QMessageBox.question(
+                self,
+                'Warning',
+                'This is the last picture. Back to the first picture?',
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No
+            )
+            self.heart_beat_timer.start(2000)
+            if result == QtWidgets.QMessageBox.StandardButton.No:
+                return
+            self.current_index = 0
+        self.show_image(self.current_index)
 
     def jump_to(self):
         index = self.files_dock_widget.lineEdit_jump.text()
@@ -541,7 +606,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 if index in self.files_list:
                     index = self.files_list.index(index)+1
                 else:
+                    self.heart_beat_timer.stop()
                     QtWidgets.QMessageBox.warning(self, 'Warning', 'Don`t exist image named: {}'.format(index))
+                    self.heart_beat_timer.start(2000)
                     self.files_dock_widget.lineEdit_jump.clear()
                     return
             index = int(index)-1
@@ -549,7 +616,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.show_image(index)
                 self.files_dock_widget.lineEdit_jump.clear()
             else:
+                self.heart_beat_timer.stop()
                 QtWidgets.QMessageBox.warning(self, 'Warning', 'Index must be in [1, {}].'.format(len(self.files_list)))
+                self.heart_beat_timer.start(2000)
                 self.files_dock_widget.lineEdit_jump.clear()
                 self.files_dock_widget.lineEdit_jump.clearFocus()
                 return
@@ -670,6 +739,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.close()
 
     def closeEvent(self, a0: QtGui.QCloseEvent):
+        self.heart_beat_timer.stop()
         self.exit()
 
     def init_connect(self):
@@ -721,3 +791,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionTo_bottom.setEnabled(False)
         self.actionBit_map.setChecked(False)
         self.actionBit_map.setEnabled(False)
+
+    def __heart_beat(self):
+        if self.edit_data["remote"] and isinstance(self.current_index, int):
+            file_path = self.files_list[self.current_index]
+            success, reason = remote.heart_beat(name=file_path, **self.edit_data["remote_data"])
+            # if not success:
+            #     self.heart_beat_timer.stop()
+            #     QtWidgets.QMessageBox.warning(self, 'Error', reason)
+            #     self.heart_beat_timer.start(2000)
