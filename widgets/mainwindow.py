@@ -426,7 +426,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     )
                     self.heart_beat_timer.start(2000)
                     if result == QtWidgets.QMessageBox.StandardButton.No:
-                        return
+                        return False
 
         self.reset_action()
         self.current_label = None
@@ -449,7 +449,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     self.heart_beat_timer.stop()
                     QtWidgets.QMessageBox.warning(self, 'Error', image_data)
                     self.heart_beat_timer.start(2000)
-                    return
+                    return False
             else:
                 file_path = os.path.join(self.image_root, os.path.basename(self.files_list[index])).replace("\\", "/")
                 image_data = Image.open(file_path)
@@ -537,7 +537,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print("ERROR:", e)
             raise
         finally:
-            pass
+            return 
             # if self.current_index > 0:
             #     self.actionPrev.setEnabled(True)
             # else:
@@ -553,6 +553,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         if self.current_index is None:
             return
+        
+        idx_before_change = self.current_index
+        
         if not self.saved:
             self.heart_beat_timer.stop()
             result = QtWidgets.QMessageBox.question(self, 'Warning', 'Proceed without saved?', QtWidgets.QMessageBox.StandardButton.Yes|QtWidgets.QMessageBox.StandardButton.No, QtWidgets.QMessageBox.StandardButton.No)
@@ -574,7 +577,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if result == QtWidgets.QMessageBox.StandardButton.No:
                 return
             self.current_index = len(self.files_list) - 1
-        self.show_image(self.current_index)
+        flag = self.show_image(self.current_index)
+        if isinstance(flag, bool) and not flag:
+            self.current_index = idx_before_change
 
     def next_image(self):
 
@@ -583,6 +588,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         if self.current_index is None:
             return
+
+        idx_before_change = self.current_index
+        
         if not self.saved:
             self.heart_beat_timer.stop()
             result = QtWidgets.QMessageBox.question(
@@ -612,7 +620,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if result == QtWidgets.QMessageBox.StandardButton.No:
                 return
             self.current_index = 0
-        self.show_image(self.current_index)
+        flag = self.show_image(self.current_index)
+        if isinstance(flag, bool) and not flag:
+            self.current_index = idx_before_change
 
     def jump_to(self):
         index = self.files_dock_widget.lineEdit_jump.text()
