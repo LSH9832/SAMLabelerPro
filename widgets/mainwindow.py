@@ -1,4 +1,5 @@
 import time
+
 import numpy as np
 import yaml
 import json
@@ -314,7 +315,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             remote_data = self.edit_data["remote_data"]
             self.files_list = remote.get_image_list(**remote_data)
             self.files_dock_widget.update_widget()
-            # print("远程获取完毕")
+            print("远程获取完毕")
             self.current_index = 0 if reset_index else self.edit_data["remote_data"].get("remote_index", 0) if self.edit_data["remote"] else self.edit_data.get("current_index", 0)
             return
 
@@ -374,6 +375,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.label_root = dir
             self.actionSave_dir.setStatusTip("Label root: {}".format(self.label_root))
 
+        # 刷新图片
         if self.current_index is not None and show:
             self.show_image(self.current_index)
 
@@ -473,18 +475,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 if self.edit_data["remote"]:
                     label_path = file_path.split(".")[0] + ".json"
                     label_data = remote.get_label(name=file_path, **self.edit_data["remote_data"])
-                    if label_data is None:
-                        return
 
                     # print("load remote label")
                     self.current_label = Annotation(file_path, label_path, image_data, True)
                     # print("load remote label from dict")
-                    try:
-                        self.current_label.load_from_dict(label_data)
-                    except:
-                        pass
+                    if label_data is not None:
+                        try:
+                            self.current_label.load_from_dict(label_data)
+                        except:
+                            pass
                     # print("end load remote label")
-
 
                 else:
                     _, name = os.path.split(file_path)
