@@ -12,7 +12,7 @@
 
 ## 1 即将更新（祝大家劳动节快乐）
 
-- 使用YOLO格式、VOC格式（必须有train.txt和val.txt文件，包含的内容是不带后缀名的文件名字集合，更新后会详细说明）、Visdrone格式或COCO格式的数据集的bbox标签生成segment标签。
+- 暂无，发现bug请在Issues中留言
 
 ## 2 相对于原版的新特性
 
