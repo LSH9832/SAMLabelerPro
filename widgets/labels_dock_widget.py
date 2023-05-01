@@ -20,6 +20,8 @@ class LabelsDockWidget(QtWidgets.QWidget, Ui_Form):
         self.listWidget.customContextMenuRequested.connect(
             self.right_button_menu)
 
+        self.check_boxes = []
+
 
 
     def right_button_menu(self, point):
@@ -38,6 +40,7 @@ class LabelsDockWidget(QtWidgets.QWidget, Ui_Form):
         check_box.setObjectName('check_box')
         check_box.stateChanged.connect(functools.partial(self.set_polygon_show, polygon))
         layout.addWidget(check_box)
+        self.check_boxes.append(check_box)
 
         label_color = QtWidgets.QLabel()
         label_color.setFixedWidth(10)
@@ -67,6 +70,7 @@ class LabelsDockWidget(QtWidgets.QWidget, Ui_Form):
         self.listWidget.clear()
         self.polygon_item_dict.clear()
         self.checkBox_visible.setChecked(True)
+        self.check_boxes.clear()
 
         for polygon in self.mainwindow.polygons:
             item, item_widget = self.generate_item_and_itemwidget(polygon)
@@ -108,7 +112,7 @@ class LabelsDockWidget(QtWidgets.QWidget, Ui_Form):
             vertex.setVisible(self.sender().checkState())
         polygon.setVisible(self.sender().checkState())
 
-    def set_all_polygon_visible(self, visible:bool=None):
+    def set_all_polygon_visible(self, visible: bool=None):
         visible = self.checkBox_visible.isChecked() if visible is None else visible
         for index in range(self.listWidget.count()):
             item = self.listWidget.item(index)
@@ -116,3 +120,13 @@ class LabelsDockWidget(QtWidgets.QWidget, Ui_Form):
             check_box = widget.findChild(QtWidgets.QCheckBox, 'check_box')
             check_box.setChecked(visible)
         self.checkBox_visible.setChecked(visible)
+
+    def set_selected_polygon_visible(self, visible=None):
+        visible = self.checkBox_visible.isChecked() if visible is None else visible
+        item = self.listWidget.selectedItems()
+        have_selected = True if item else False
+        if have_selected:
+            widget = self.listWidget.itemWidget(item)
+            check_box = widget.findChild(QtWidgets.QCheckBox, 'check_box')
+            check_box.setChecked(visible)
+            self.checkBox_visible.setChecked(visible)

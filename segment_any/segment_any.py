@@ -42,19 +42,53 @@ class SegAny:
         self.image = None
         torch.cuda.empty_cache()
 
-    def predict(self, input_point, input_label):
+
+    def predict_box(self, box, xyxy=True, expand=0):
+
+        def modify_box(bbox: (list, np.ndarray), xy2=True):
+            if isinstance(bbox, list):
+                bbox = np.array(bbox)
+            if not xy2:
+                bbox[2:4] += bbox[:2]
+            return bbox
+
+        box = modify_box(box, xyxy)
+        ori_box = box.copy()
+        box[:2] -= expand
+        box[2:4] += expand
+        masks, scores, logits = self.predictor.predict(box=box, multimask_output=True)
+        mask_input = logits[np.argmax(scores), :, :]  # Choose the model's best mask
+        masks, _, mi = self.predictor.predict(
+            box=box,
+            mask_input=mask_input[None, :, :],
+            multimask_output=False,
+        )
+
+        modify_mask: np.ndarray = masks.copy()
+        modify_mask[..., ori_box[1]:ori_box[3], ori_box[0]:ori_box[2]] = False
+        masks[modify_mask] = False
+
+        torch.cuda.empty_cache()
+        return masks
+
+
+    def predict(self, input_point, input_label, box=None):
         input_point = np.array(input_point)
         input_label = np.array(input_label)
+        if isinstance(box, list):
+            box = np.array(box)
 
         # print(input_point, input_label)
 
         masks, scores, logits = self.predictor.predict(
+            box=box,
             point_coords=input_point,
             point_labels=input_label,
             multimask_output=True,
         )
         mask_input = logits[np.argmax(scores), :, :]  # Choose the model's best mask
         masks, _, _ = self.predictor.predict(
+            box=box,
             point_coords=input_point,
             point_labels=input_label,
             mask_input=mask_input[None, :, :],

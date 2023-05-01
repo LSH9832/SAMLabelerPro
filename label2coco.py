@@ -87,10 +87,15 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
                     target_dir = os.path.join(self.COCODistPath.text(), self.COCODatasetName.text())
 
                     self.to_coco_ProgressQueue.get() if not self.to_coco_ProgressQueue.empty() else None
+
+                    label_path = self.label_path.text()
+                    txt_file_list = glob(osp.join(osp.dirname(label_path), "**/*.txt").replace("\\", "/"), recursive=True)
+                    self.addMsg(f"use class file {txt_file_list[0]}" if len(txt_file_list) else "no txt class file found")
+
                     kwargs = {
                         "image_dirs": self.image_path.text(),
-                        "annotation_dirs": self.label_path.text(),
-                        "class_file": None,
+                        "annotation_dirs": label_path,
+                        "class_file": txt_file_list[0] if len(txt_file_list) else None,
                         "data_name": self.COCODatasetName.text(),
                         "image_target_dir": osp.join(target_dir, self.COCODistImagePath.text()),
                         "image_type": "jpg",
@@ -226,8 +231,12 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
 
                             if self.progressBar.value() == self.progressBar.maximum():
                                 self.to_coco = False
-                                self.addMsg(self.to_coco_ProgressQueue.get())
-
+                                while not self.to_coco_ProgressQueue.empty():
+                                    self.addMsg(self.to_coco_ProgressQueue.get())
+                                try:
+                                    self.to_coco_Progress.terminate()
+                                except:
+                                    pass
                                 self.update()
 
                                 QtWidgets.QMessageBox.information(
@@ -251,7 +260,8 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
                 if self.divide:
                     if not self.DivideProgress.is_alive():
                         self.divide = False
-                        self.addMsg(self.DivideProgressQueue.get())
+                        while not self.DivideProgressQueue.empty():
+                            self.addMsg(self.DivideProgressQueue.get())
                         self.update()
                         QtWidgets.QMessageBox.information(
                             self,

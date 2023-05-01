@@ -214,6 +214,8 @@ class COCO:
                 for this_class in classes:
                     if len(this_class):
                         this_class = this_class.split(":")
+                        while this_class[0].endswith(" "):
+                            this_class[0] = this_class[0][:-1]
                         self.add_category(name=this_class[0], supercategory=this_class[-1])
         self.categorie_num = {}
 
@@ -552,7 +554,7 @@ def to_coco(image_dirs,
     [thread.join() for thread in threads]
 
     print("\nConvert finished. Images saved to %s" % image_target_dir.replace("\\", "/"))
-    coco_dataset.save(osp.join(dist_dir, "annotations", data_name)) if save else None
+    coco_dataset.save(osp.join(dist_dir, "annotations", f"{data_name}_{osp.dirname(image_target_dir)}")) if save else None
 
     if q is not None:
         try:

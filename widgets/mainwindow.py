@@ -45,6 +45,10 @@ import utils.remote as remote
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+
+    single_vis = False
+    selected_item = None
+
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
@@ -729,11 +733,46 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             pass
 
-    def set_labels_visible(self, visible=None):
+    def set_labels_visible(self, visible=None, single=False):
+
+        def try_check_single():
+
+            selected_item = self.scene.selectedItems()
+            if len(selected_item):
+                self.selected_item = selected_item[0]
+            else:
+                pass
+            selected_idx = -1
+            for idx, k in enumerate(self.labels_dock_widget.polygon_item_dict.keys()):
+                # print(k, self.scene.selectedItems()[0])
+                if k == self.selected_item:
+                    selected_idx = idx
+                # print(self.selected_item, k)
+            if selected_idx == -1:
+                selected_idx = self.labels_dock_widget.listWidget.currentRow()
+            # print(self.selected_item, selected_idx)
+
+            for idx, check_box in enumerate(self.labels_dock_widget.check_boxes):
+                check_box.setChecked(idx == selected_idx or not self.single_vis)
+
+        if single:
+            self.single_vis = not self.single_vis
+            try:
+                try_check_single()
+            except Exception as e:
+                self.single_vis = not self.single_vis
+                print(e)
+            return
+
         if visible is None:
             visible = not self.labels_dock_widget.checkBox_visible.isChecked()
-        self.labels_dock_widget.checkBox_visible.setChecked(visible)
+            self.labels_dock_widget.checkBox_visible.setChecked(visible)
+
         self.labels_dock_widget.set_all_polygon_visible(visible)
+
+        if self.single_vis and (visible or False):
+            # print("single")
+            try_check_single()
 
     def label_converter(self):
         self.convert_dialog.reset_gui()
@@ -788,6 +827,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionFit_wiondow.triggered.connect(self.view.zoomfit)
         self.actionBit_map.triggered.connect(self.change_bit_map)
         self.actionVisible.triggered.connect(functools.partial(self.set_labels_visible, None))
+
+        self.actionVisSingle.clicked.connect(functools.partial(self.set_labels_visible, None, True))
 
         self.actionConverter.triggered.connect(self.label_converter)
         self.actionConverter_coco.triggered.connect(self.convert_coco)

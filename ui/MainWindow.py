@@ -273,6 +273,13 @@ class Ui_MainWindow(object):
         icon24.addPixmap(QtGui.QPixmap(":/icon/icons/眼睛_eyes.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionVisible.setIcon(icon24)
         self.actionVisible.setObjectName("actionVisible")
+
+        self.actionVisSingle = QtWidgets.QPushButton(MainWindow)
+        # self.actionVisSingle.setIcon(icon24)
+        self.actionVisSingle.setObjectName("actionVisSingle")
+        self.actionVisSingle.lower()
+        # self.actionVisSingle.setEnabled(True)
+
         self.menuFile.addAction(self.actionOpen_dir)
         self.menuFile.addAction(self.actionSave_dir)
         self.menuFile.addSeparator()
@@ -334,6 +341,9 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionFit_wiondow)
         self.toolBar.addAction(self.actionBit_map)
         self.toolBar.addAction(self.actionVisible)
+
+        # self.toolBar.addAction(self.actionVisSingle)
+
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -432,4 +442,6 @@ class Ui_MainWindow(object):
         self.actionVisible.setText(_translate("MainWindow", "Visible"))
         self.actionVisible.setStatusTip(_translate("MainWindow", "Visible"))
         self.actionVisible.setShortcut(_translate("MainWindow", "V"))
+
+        self.actionVisSingle.setShortcut(_translate("MainWindow", "Tab"))
 import icons_rc

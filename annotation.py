@@ -6,7 +6,7 @@ from typing import List
 
 
 class Object:
-    def __init__(self, category:str, group:int, segmentation, area, layer, bbox, iscrowd=0, note=''):
+    def __init__(self, category: str, group: int, segmentation, area, layer, bbox, iscrowd=0, note=''):
         self.category = category
         self.group = group
         self.segmentation = segmentation
@@ -27,14 +27,16 @@ class Annotation:
             self.img_name = image_path
             self.label_path = label_path
             self.note = ''
-            image = np.array(image)
+            if not isinstance(image, np.ndarray):
+                image = np.array(image)
         else:
             img_folder, img_name = os.path.split(image_path)
             self.img_folder = img_folder
             self.img_name = img_name
             self.label_path = label_path
             self.note = ''
-            image = np.array(Image.open(image_path) if image is None else image)
+            if not isinstance(image, np.ndarray):
+                image = np.array(Image.open(image_path) if image is None else image)
 
         if image.ndim == 3:
             self.height, self.width, self.depth = image.shape
@@ -46,7 +48,7 @@ class Annotation:
             print('Warning: Except image has 2 or 3 ndim, but get {}.'.format(image.ndim))
         del image
 
-        self.objects: List[Object,...] = []
+        self.objects: List[Object, ...] = []
 
     def load_from_dict(self, dataset):
         info = dataset.get('info', {})

@@ -3,7 +3,7 @@
 ![image](https://user-images.githubusercontent.com/69880398/235317010-2ec560cf-1de9-436d-81a4-79654e533de1.png)
 
 ## 注意
-- 本工具非原创，**魔改自[yatengLG](https://github.com/yatengLG)大佬的[ISAT_with_segment_anything](https://github.com/yatengLG/ISAT_with_segment_anything)，包含其所有功能**（截至2023年4月26日23:59），界面也相同，其功能使用方法请阅读该项目的[README.md](https://github.com/yatengLG/ISAT_with_segment_anything/blob/master/README.md)。再次感谢大佬的分享！
+- 本工具非原创，**魔改自[yatengLG](https://github.com/yatengLG) 大佬的[ISAT_with_segment_anything](https://github.com/yatengLG/ISAT_with_segment_anything) ，包含其所有功能**（截至2023年4月26日23:59），界面也相同，其功能使用方法请阅读该项目的[README.md](https://github.com/yatengLG/ISAT_with_segment_anything/blob/master/README.md) 。再次感谢大佬的分享！
 
 ![image](https://github.com/yatengLG/ISAT_with_segment_anything/raw/master/display/%E6%A0%87%E6%B3%A8%20-big-original.gif)
 
@@ -37,9 +37,9 @@ half: false  #
 
 在RTX3060 12G上进行测试，显存占用变化如下
 
-- [vit_b模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth)：0.9G（打开本工具前）→ 2.6G（打开工具并开始标注后）
-- [vit_l模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth)：0.9G（打开本工具前）→ 3.1G（打开工具并开始标注后）
-- 由于[vit_h模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth)半精度效果差，在此不列出。
+- [vit_b模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth) ：0.9G（打开本工具前）→ 2.6G（打开工具并开始标注后）
+- [vit_l模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth) ：0.9G（打开本工具前）→ 3.1G（打开工具并开始标注后）
+- 由于[vit_h模型](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth) 半精度效果差，在此不列出。
 
 ### 2.3 可手动选择模型大小
 
@@ -58,16 +58,61 @@ force_model_type: l   # 或 b
 ![image](https://user-images.githubusercontent.com/69880398/235314404-fc57e176-c8e5-4112-bed7-62e59e3693d4.png)
 
 
-### 2.5 使用体验优化
+### 2.5 多种数据集生成segment标签
 
-#### 2.5.1 快速恢复
+支持YOLO/VOC/COCO/VisDrone格式的bbox标签生成可在本工具中编辑的segment标签文件。
+
+首先在cfg/dataset/****.yaml配置文件中编辑相应格式数据集的相关信息（数据集目录等信息），注意，VOC格式必须有两个txt文件分别包含训练集和测试集所有图像的名称（不带后缀），如原VOC2012数据集可写成
+```yaml
+# 见 cfg/dataset/voc.yaml
+type: "voc"
+
+dataset_path: "F:/dataset/VOC/VOC2012"
+
+kwargs:
+  suffix: "jpg"
+  use_cache: true                      # 如果非首次加载，是否从生成的缓存文件中加载（可提高加载速度）
+
+train:
+  image_dir: "JPEGImages"
+  anno_dir: "Annotations"
+  label: "ImageSets/Main/train.txt"    # 描述训练集的txt文件
+
+val:
+  image_dir: "JPEGImages"
+  anno_dir: "Annotations"
+  label: "ImageSets/Main/val.txt"      # 描述验证集的txt文件
+
+test:
+  test_dir: "test"
+
+segmentaion_enabled: false
+
+names: ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
+        'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',  'tvmonitor']
+
+```
+
+然后使用如下命令即可转换
+```shell
+python demo/box2segment.py --cfg cfg/dataset/yolo.yaml
+                           --size h     # SAM模型大小， b, l
+                           --half       # 半精度，h模型无效
+                           --dist datasets/myYOLODataset/annotations   # 生成的标签的保存路径，训练集在子文件夹train中，验证集在val中
+                           --val        # 是否是验证集，否则为训练集
+                           --overwrite  # 覆盖保存路径中已有的同名标签
+```
+
+### 2.6 使用体验优化
+
+#### 2.6.1 快速恢复
 重新打开本工具会记住上一次关闭时加载的图片以及相应的图像和标签的文件夹，以及所有的用于标注的类别，从而快速继续标注工作
 
-#### 2.5.2 图片切换速度优化
+#### 2.6.2 图片切换速度优化
 
 通过创建子线程，在子线程中让SAM加载图片，大幅优化图片间的切换速度，使用最大模型时尤其明显
 
-#### 2.5.3 快速标注
+#### 2.6.3 快速标注
 
 标注时会记住上一次标注的类别，若一直标注同一类别无需重新选择，同时增设快捷键，当进入类别选择菜单时：
 - 按下“E”键：确认（不带group id）
@@ -104,7 +149,7 @@ wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth
 wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth
 wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 ```
-- 然后torch和torchvision不用多说，按照pytorch官网[给出的步骤](https://pytorch.org/get-started/previous-versions/)安装， 然后
+- 然后torch和torchvision不用多说，按照pytorch官网[给出的步骤](https://pytorch.org/get-started/previous-versions/) 安装， 然后
 ```shell
 pip install -r requirements.txt
 python main.py
