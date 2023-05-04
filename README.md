@@ -10,7 +10,7 @@
 - 使用本工具时为避免导入冲突，请务必不要在运行环境中安装SAM源码，本项目中的segment_anything文件夹便是作了一定改动的SAM源码。
 - 如果有QT报错，大概率是opencv的原因，请把requirements.txt文件中的opencv_python换为opencv_python_headless
 
-## 1 即将更新（祝大家劳动节快乐）
+## 1 即将更新
 
 - 暂无，发现bug请在Issues中留言
 
