@@ -172,13 +172,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if not self.use_segment_anything:
             websites = 'https://github.com/facebookresearch/segment-anything#model-checkpoints'
-            self.heart_beat_timer.stop()
+            try:
+                self.heart_beat_timer.stop()
+            except:
+                pass
             QtWidgets.QMessageBox.warning(
                 self, 'Warning',
                 f'The checkpoint of [Segment anything] not existed. If you want use quick annotate, '
                 f'please download from {websites}'
             )
-            self.heart_beat_timer.start(2000)
+            try:
+                self.heart_beat_timer.start(2000)
+            except:
+                pass
 
         if self.use_segment_anything:
             if self.segany.device != 'cpu':
