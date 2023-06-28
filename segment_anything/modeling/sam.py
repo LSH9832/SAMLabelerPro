@@ -11,6 +11,7 @@ from torch.nn import functional as F
 from typing import Any, Dict, List, Tuple
 
 from .image_encoder import ImageEncoderViT
+from .tiny_vit_sam import TinyViT
 from .mask_decoder import MaskDecoder
 from .prompt_encoder import PromptEncoder
 
@@ -22,7 +23,7 @@ class Sam(nn.Module):
 
     def __init__(
         self,
-        image_encoder: ImageEncoderViT,
+        image_encoder: [ImageEncoderViT, TinyViT],
         prompt_encoder: PromptEncoder,
         mask_decoder: MaskDecoder,
         pixel_mean: List[float] = [123.675, 116.28, 103.53],
@@ -32,7 +33,7 @@ class Sam(nn.Module):
         SAM predicts object masks from an image and input prompts.
 
         Arguments:
-          image_encoder (ImageEncoderViT): The backbone used to encode the
+          image_encoder (ImageEncoderViT, TinyVit): The backbone used to encode the
             image into image embeddings that allow for efficient mask prediction.
           prompt_encoder (PromptEncoder): Encodes various types of input prompts.
           mask_decoder (MaskDecoder): Predicts masks from the image embeddings

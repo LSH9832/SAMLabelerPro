@@ -155,11 +155,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         print("init SAM")
 
         weights_list = glob("**/*.pth", recursive=True)
+        mobile_weights_list = glob("**/*.pt", recursive=True)
         self.use_segment_anything = False
-        if len(weights_list):
-            weights_size = [os.path.getsize(file) / 1024 ** 3 for file in weights_list]
 
-            for _, file in sorted(zip(weights_size, weights_list), reverse=True):
+        # print(weights_list)
+
+        if len(weights_list+mobile_weights_list):
+            weights_size = [99999 for _ in mobile_weights_list] + \
+                           [os.path.getsize(file) / 1024 ** 3 for file in weights_list]
+
+            for _, file in sorted(zip(weights_size, mobile_weights_list + weights_list), reverse=True):
                 try:
                     file = file.replace("\\", "/")
                     self.segany = SegAny(file, self.edit_data.get("half", True), self.edit_data.get("force_model_type"))
@@ -167,7 +172,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         self.statusbar.showMessage(f'Using weights: {file}.')
                         self.use_segment_anything = True
                         break
-                except:
+                except Exception as e:
+                    # print(e)
                     pass
 
         if not self.use_segment_anything:

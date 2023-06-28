@@ -1,4 +1,4 @@
-# SAMLabeler Pro: 使用 [Segment Anyting Model](https://github.com/facebookresearch/segment-anything) 辅助的图像标注工具，支持远程多人同时标注
+# SAMLabeler Pro: 使用 [SAM](https://github.com/facebookresearch/segment-anything) 及[MobileSAM](https://github.com/ChaoningZhang/MobileSAM) 辅助的图像标注工具，支持远程多人同时标注
 
 ![image](https://user-images.githubusercontent.com/69880398/235317010-2ec560cf-1de9-436d-81a4-79654e533de1.png)
 
@@ -10,9 +10,12 @@
 - 使用本工具时为避免导入冲突，请务必不要在运行环境中安装SAM源码，本项目中的segment_anything文件夹便是作了一定改动的SAM源码。
 - 如果有QT报错，大概率是opencv的原因，请把requirements.txt文件中的opencv_python换为opencv_python_headless
 
+## 0 最近更新
+[2023/6/28] 目前已经支持轻量化模型[MobileSAM](https://github.com/ChaoningZhang/MobileSAM) ，以与SAM相近的精度达到近百倍的速度，且显存占用更少。[点此下载模型](https://github.com/LSH9832/SAMLabelerPro/releases/download/v0.2.0/mobile_sam.pt) 。若无特殊设置，将会优先加载此模型。
+
 ## 1 即将更新
 
-- CV真的太卷了，还好我毕业了，真的卷不动了。有空的话会加入FastSAM模型和MobileSAM模型（MobileSAM优先考虑）
+- 暂无，发现bug请在Issues中留言
 
 ## 2 相对于原版的新特性
 

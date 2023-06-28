@@ -10,6 +10,7 @@ torchvision
 pycocotools
 matplotlib
 requests
+timm
 flask   # only server need this.
 # onnxruntime
 # onnx

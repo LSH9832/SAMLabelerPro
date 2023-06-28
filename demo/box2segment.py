@@ -68,7 +68,7 @@ class SegBox:
 
 
 def main(args):
-    assert args.size.lower() in ["b", "l", "h"]
+    assert args.size.lower() in ["mobile", "b", "l", "h"]
     boxSegmenter = SegBox(force_size=args.size, half=args.half)
 
     if not (args.cfg.startswith("/") or args.cfg[1] == ":"):

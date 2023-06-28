@@ -11,13 +11,16 @@ class SegAny:
 
         success = False
 
-        all_model_type = ["h", "l", "b"]
+        all_model_type = ["mobile", "h", "l", "b"]
         if force_model_type is not None and force_model_type in all_model_type:
             all_model_type = [force_model_type]
 
         for self.model_type in [f"vit_{t}" for t in all_model_type]:
             try:
                 half = half and torch.cuda.is_available() and not self.model_type.endswith("h")
+                if (self.model_type.endswith("h") or self.model_type.endswith("mobile")) and half:
+                    print(f"{self.model_type} can not run with half precision, using full precision.")
+                    half = False
                 print(f"try load weights '{checkpoint}' with model size '{self.model_type}'")
                 sam = sam_model_registry[self.model_type](checkpoint=checkpoint)
                 sam.to(device=self.device, dtype=torch.float16 if half else torch.float32)
@@ -35,13 +38,14 @@ class SegAny:
         self.success = success
 
     def set_image(self, image):
+        # print("set image")
         self.predictor.set_image(image)
+        # print("done")
 
     def reset_image(self):
         self.predictor.reset_image()
         self.image = None
         torch.cuda.empty_cache()
-
 
     def predict_box(self, box, xyxy=True, expand=0):
 

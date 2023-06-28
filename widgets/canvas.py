@@ -60,7 +60,8 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
                             self.mainwindow.segany.set_image(img)
                             torch.cuda.empty_cache()
                             break
-                        except:
+                        except Exception as e:
+                            raise
                             pass
 
                 self.now_thread = Thread(target=th, args=(self.image_data, self.now_time))
