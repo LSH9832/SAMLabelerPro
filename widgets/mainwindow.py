@@ -89,6 +89,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.current_index = None
         self.current_file_index: int = None
 
+        self.local_cfg = self.edit_data.get("cfg")
         self.config_file = self.edit_data.get("cfg") if not self.edit_data["remote"] else REMOTE_CONFIG_FILE
         self.saved = True
         self.load_finished = False
@@ -293,7 +294,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cfg["label"] = self.cfg.get('label', [])
 
         if self.edit_data["remote"]:
-            remote_cfg = remote.get_categories(**self.edit_data["remote_data"])
+            import requests
+            try:
+                remote_cfg = remote.get_categories(**self.edit_data["remote_data"])
+            except requests.exceptions.ConnectionError:
+                # print(e)
+                remote_cfg = None
+                self.edit_data["remote"] = False
+                self.edit_data["cfg"] = self.config_file = self.local_cfg
+                self.cfg = load_config(self.config_file if osp.isfile(self.config_file) else DEFAULT_CONFIG_FILE)
+                self.cfg["label"] = self.cfg.get('label', [])
+                print("can not connect to the remote server, change to local mode.")
+
             if remote_cfg is not None:
                 exist_names = [cate["name"] for cate in self.cfg["label"]]
                 for category in remote_cfg["label"]:
