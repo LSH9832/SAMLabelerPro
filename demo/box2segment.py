@@ -38,7 +38,8 @@ class SegBox:
             self.model.set_image(image.copy())
 
     def load_SAM_model(self, half=True, force_size=None):
-        weights_list = glob(osp.join(ROOT_PATH, "**/*.pth").replace("\\", "/"), recursive=True)
+        weights_list = glob(osp.join(ROOT_PATH, "**/*.pt").replace("\\", "/"), recursive=True)
+        weights_list += glob(osp.join(ROOT_PATH, "**/*.pth").replace("\\", "/"), recursive=True)
         weights_size = [os.path.getsize(file) / 1024 ** 3 for file in weights_list]
         for _, file in sorted(zip(weights_size, weights_list), reverse=True):
             try:
