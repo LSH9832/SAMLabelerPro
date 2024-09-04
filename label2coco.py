@@ -349,6 +349,67 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
             self.p.show()
 
 
+def coco2yolo(json_file, dist_dir, prefix="", postfix="", q=None):
+    coco_dataset = COCO(json_file)
+    
+    yolo_labels = {}
+    
+    thread_num = min(32, os.cpu_count())
+    num_anno = len(coco_dataset.annotations)
+    count = 0
+    
+    def label_deal_thread(rank):
+        global count
+        for i, anno in enumerate(coco_dataset.annotations):
+            if i % thread_num == rank:
+                img_info = coco_dataset._get_image_data_by_id(anno['image_id'])
+                img_suffix = img_info["file_name"].split(".")[-1]
+                label_fname = osp.join(dist_dir, osp.basename(prefix + img_info["file_name"])[:-img_suffix-1] + f"{postfix}.txt")
+                
+                label = anno["category_id"] - 1
+                bbox = anno["bbox"]
+                img_w = img_info["width"]
+                img_h = img_info["height"]
+                
+                cx, cy, w, h = [bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2, bbox[2], bbox[3]]
+                cx /= img_w
+                cy /= img_h
+                w /= img_w
+                h /= img_h
+                
+                if label_fname in yolo_labels:
+                    yolo_labels[label_fname] += f"\n{label} {cx} {cy} {w} {h}"
+                else:
+                    yolo_labels[label_fname] = f"{label} {cx} {cy} {w} {h}"
+                count += 1
+                print(f"\r{count}/{num_anno}           ", end="")
+    
+    if q is not None:
+        q.put(f"start dealing labels, number in total: {num_anno}")
+    else:
+        print(f"start dealing labels, number in total: {num_anno}")
+    print()
+    threads = [Thread(target=label_deal_thread, args=(k, )) for k in range(thread_num)]
+    [thread.start() for thread in threads]
+    [thread.join() for thread in threads]
+    
+    print()
+    
+    if q is not None:
+        q.put(f"start writing labels files, number in total: {len(yolo_labels.keys())}")
+    else:
+        print(f"start writing labels files, number in total: {len(yolo_labels.keys())}")
+    
+    count = 0
+    for k, v in yolo_labels.items():
+        open(k, "w").write(v)
+        count += 1
+        print(f"\r{count}", end="")
+        
+    if q is not None:
+        q.put(f"all labels are saved to {osp.abspath(dist_dir)}")
+        
+
 def main():
     import sys
 
