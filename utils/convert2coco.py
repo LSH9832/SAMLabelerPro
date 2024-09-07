@@ -30,11 +30,13 @@ class COCO:
         self.annotations = []
         self.categories = []
         self.categorie_num = {}
+        self.images_dict = {}
 
         if isinstance(fp, str):
             assert os.path.exists(fp)
             fp = open(fp)
         self.load(fp)
+        
 
     def __enter__(self):
         return self
@@ -107,6 +109,8 @@ class COCO:
         :param image_id:
         :return: image data(dict)
         """
+        if image_id in self.images_dict:
+            return self.images_dict[image_id]
         for image in self.images:
             if image["id"] == image_id:
                 return image
@@ -152,12 +156,15 @@ class COCO:
             t0 = time()
             data = json.load(fp)
             print("loading time: %.2fs" % (time()-t0))
-            self.info = data["info"]
-            self.lic = data["licenses"]
+            self.info = data.get("info", "")
+            self.lic = data.get("licenses", "")
             self.images = data["images"]
             self.annotations = data["annotations"]
             self.categories = data["categories"]
             self._count_category_num()
+            
+            for img in self.images:
+                self.images_dict[img["id"]] = img
 
     def change_info(self, data_name, version="1.0", url="", author=""):
         """
@@ -492,6 +499,8 @@ def to_coco(image_dirs,
     # max_num = 1000
 
     q.put(anno_file_num)
+    
+    
 
 
     def one_thread(index, total):
@@ -548,7 +557,7 @@ def to_coco(image_dirs,
             q.put(count)
 
 
-    num_threads = os.cpu_count()
+    num_threads = min(32, os.cpu_count())
     threads = [Thread(target=one_thread, args=(i, num_threads)) for i in range(num_threads)]
     [thread.start() for thread in threads]
     [thread.join() for thread in threads]
@@ -630,15 +639,113 @@ def divide_coco_by_image(json_file, train: float, val: float, q=None):
         print(e)
 
 
+def coco2yolo(json_file, dist_dir, moveImg=False, oriImgPath="", distImgPath="", q=None, num_process=1, rank=0):
+    global count
+    coco_dataset = COCO(json_file)
+    
+    yolo_labels = {}
+    
+    thread_num = min(32, os.cpu_count())
+    num_anno = len(coco_dataset.annotations)
+    
+    count = 0
+    dist_dir = osp.abspath(dist_dir).replace('\\', '/')
+    if not osp.isdir(dist_dir):
+        os.makedirs(dist_dir, exist_ok=True)
+    
+    if moveImg:
+        os.makedirs(distImgPath, exist_ok=True)
+        (print if q is None else q.put)(f"start moving images to {distImgPath}")
+    
+    num_files = len(coco_dataset.images)
+    bar_length = num_files + num_anno * (2 if moveImg else 1)
+    output_files = []
+    count = 0
+    print()
+    for img in coco_dataset.images:
+        img_suffix = img["file_name"].split(".")[-1]
+        output_files.append(osp.join(dist_dir, osp.basename(img["file_name"])[:-len(img_suffix)-1] + ".txt").replace("\\", "/"))
+
+        img_file = osp.basename(img["file_name"])
+        ori_img_path = osp.join(oriImgPath, img_file)
+        count += 1
+        print(f"\rmove files: {count}/{num_files}      ", end="")
+        if osp.isfile(ori_img_path):
+            shutil.move(ori_img_path, distImgPath)
+            if q is not None:
+                q.put([rank, count / bar_length, bar_length])
+
+    print()
+    
+    
+    def label_deal_thread(thread_rank):
+        global count
+        for i, anno in enumerate(coco_dataset.annotations):
+            if i % thread_num == thread_rank:
+                img_info = coco_dataset._get_image_data_by_id(anno['image_id'])
+                img_suffix = img_info["file_name"].split(".")[-1]
+                label_fname = osp.join(dist_dir, osp.basename(img_info["file_name"])[:-len(img_suffix)-1] + ".txt").replace("\\", "/")
+                
+                label = anno["category_id"] - 1
+                bbox = anno["bbox"]
+                img_w = img_info["width"]
+                img_h = img_info["height"]
+                
+                cx, cy, w, h = [bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2, bbox[2], bbox[3]]
+                cx /= img_w
+                cy /= img_h
+                w /= img_w
+                h /= img_h
+                
+                if label_fname in yolo_labels:
+                    yolo_labels[label_fname] += f"\n{label} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}"
+                else:
+                    yolo_labels[label_fname] = f"{label} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}"
+                count += 1
+                print(f"\rconverting labels: {count}/{num_anno}           ", end="")
+                if q is not None:
+                    if count == num_anno or count % 100 == 0:
+                        q.put([rank, (count + (num_files if moveImg else 0)) / bar_length, bar_length])
+    print()
+    (print if q is None else q.put)(f"start dealing labels, number in total: {num_anno}")
+    
+    threads = [Thread(target=label_deal_thread, args=(k, )) for k in range(thread_num)]
+    [thread.start() for thread in threads]
+    [thread.join() for thread in threads]
+    
+    print()
+    
+    (print if q is None else q.put)(f"start writing labels files, image number with at least 1 label in total: {len(yolo_labels.keys())}/{len(output_files)}")
+    
+    
+    count = 0
+    
+    empty_files = ""
+    for this_file in output_files:
+        content = yolo_labels.get(this_file, "")
+        if not len(content):
+            empty_files += f"\n{osp.basename(this_file)} is empty"
+        
+        with open(this_file, "w") as label_file:
+            label_file.write(content)
+        count += 1
+        print(f"\rwriting files: {count}/{num_files}    ", end="")
+        if q is not None:
+            if count == num_files or count % 100 == 0:
+                q.put([rank, (count + num_anno + (num_files if moveImg else 0)) / bar_length, bar_length])
+
+    print()
+    # for k, v in yolo_labels.items():
+    #     open(k, "w").write(v)
+    
+    (print if q is None else q.put)(empty_files)
+    (print if q is None else q.put)(f"all labels are saved to {dist_dir}")
+
+
 if __name__ == '__main__':
-    main()
-    # labels_list = glob("example/images/*.json")
-    #
-    # this_file = labels_list[0]
-    #
-    # for obj in decode_json(this_file)["objs"]:
-    #     print("#" * 100)
-    #     print(obj["name"])
-    #     print(obj["bbox"])
-    #     for edge in obj["segmentation"]:
-    #         print(edge)
+    # main()
+    
+    coco2yolo(
+        "E:/dataset/coco2017/annotations/instances_train2017.json",
+        "E:/dataset/coco2017/labels/train"
+    )
