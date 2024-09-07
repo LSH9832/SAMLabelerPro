@@ -5,17 +5,18 @@ from PyQt5.QtWidgets import QDialog, QFileDialog
 from PyQt5.uic import loadUi
 
 
-from glob import glob
+from glob import glob, iglob
 from multiprocessing import Process, freeze_support, Queue
 import os
 import os.path as osp
 import datetime
 import time
-
+import platform
 # from utils.voc2coco import COCO
-from utils.convert2coco import to_coco, divide_coco_by_image, COCO
+from utils.convert2coco import to_coco, divide_coco_by_image, COCO, coco2yolo
 
 from ui.labelConverter import Ui_MainWindow as labelConverter
+from typing import List
 
 
 freeze_support()
@@ -25,6 +26,7 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
 
     to_coco = False
     divide = False
+    coco2yolo = False
 
     to_coco_Progress: Process = None
     to_coco_ProgressQueue = Queue()
@@ -32,12 +34,22 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
     DivideProgress: Process = None
     DivideProgressQueue = Queue()
 
+    gen_idx = False
+    gen_idx_processes: List[Process] = []
+    gen_idx_queue = Queue()
+    
+    coco2yoloProgresses: List[Process] = []
+    coco2yoloQueue = Queue()
+    coco2yoloPercent = [0., 0., 0.]
+    coco2yoloNum = [0, 0, 0]
+
+
     msgs = []
 
     def __init__(self, parent=None):
         super().__init__()
         self.setupUi(self)
-        # loadUi("ui/datasetConverter.ui", self)
+        loadUi("ui/datasetConverter.ui", self)
         self.msg.setVisible(False)
         self.p = parent
         if self.p is not None:
@@ -73,13 +85,263 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
 
             self.browseLabelPath.clicked.connect(browseLabelPath)
 
-            def browseCOCOPath():
-                path = self.COCODistPath.text() if os.path.isdir(self.COCODistPath.text()) else "./"
-                ret = QFileDialog.getExistingDirectory(self, "Choose COCO Dataset Save Path", path)
+            def browseCOCOPath(editors, title="Choose COCO Dataset Path", relpath=None, force_start_path=None):
+                if not isinstance(editors, list):
+                    editors = [editors]
+                path = force_start_path if force_start_path is not None else editors[0].text() if os.path.isdir(editors[0].text()) else "./"
+                ret = QFileDialog.getExistingDirectory(self, title, path)
                 if len(ret):
-                    self.COCODistPath.setText(ret.replace("\\", "/"))
+                    if relpath is not None:
+                        ret = osp.relpath(ret, relpath)
+                    for editor in editors:
+                        editor.setText(ret.replace("\\", "/"))
+                    
 
-            self.browseCOCODistPath.clicked.connect(browseCOCOPath)
+            self.browseCOCODistPath.clicked.connect(lambda: browseCOCOPath([self.COCODistPath, self.COCODatasetPath]))
+            self.browseCOCODatasetPath.clicked.connect(lambda: browseCOCOPath(self.COCODatasetPath))
+            self.browseCurrentImgPath.clicked.connect(lambda: browseCOCOPath(self.currentimg_path, "Choose Current Image Path", self.COCODatasetPath.text(), self.COCODatasetPath.text()))
+            self.browseTrainImgPath.clicked.connect(lambda: browseCOCOPath(self.trainimg_path, "Choose Train Image Path", self.COCODatasetPath.text(), self.COCODatasetPath.text()))
+            self.browseValImgPath.clicked.connect(lambda: browseCOCOPath(self.valimg_path, "Choose Val Image Path", self.COCODatasetPath.text(), self.COCODatasetPath.text()))
+            self.browseTestImgPath.clicked.connect(lambda: browseCOCOPath(self.testimg_path, "Choose Test Image Path", self.COCODatasetPath.text(), self.COCODatasetPath.text()))
+            
+            def fill_label():
+                coco_root_path = self.COCODatasetPath.text()
+                path_valid = len(coco_root_path) and osp.isdir(coco_root_path)
+                self.divideImgPath.setEnabled(path_valid)
+                self.divideImgPath.setChecked(path_valid and self.divideImgPath.isChecked())
+                self.currentimg_path.setEnabled(path_valid)
+                self.browseCurrentImgPath.setEnabled(path_valid)
+                self.generateIndexFile.setEnabled(path_valid)
+                self.startConvertButton.setEnabled(path_valid)
+
+                self.oriCOCOTrainLabelFile.clear()
+                self.oriCOCOValLabelFile.clear()
+                self.oriCOCOTestLabelFile.clear()
+
+                if path_valid:
+
+                    train_idx = -1
+                    val_idx = -1
+                    test_idx = -1
+
+                    
+
+                    self.oriCOCOTrainLabelFile.addItem("-")
+                    self.oriCOCOValLabelFile.addItem("-")
+                    self.oriCOCOTestLabelFile.addItem("-")
+                    
+                    for i, anno_file in enumerate(glob(osp.join(coco_root_path, "annotations", "*.json"))):
+                        anno_file = osp.basename(anno_file)
+                        self.oriCOCOTrainLabelFile.addItem(anno_file)
+                        self.oriCOCOValLabelFile.addItem(anno_file)
+                        self.oriCOCOTestLabelFile.addItem(anno_file)
+                        if "train" in anno_file.lower() and (train_idx < 0 or "instances" in anno_file.lower()):
+                            self.oriCOCOTrainLabelFile.setCurrentIndex(i+1)
+                            train_idx = i
+                        elif "val" in anno_file.lower() and (val_idx < 0 or "instances" in anno_file.lower()):
+                            self.oriCOCOValLabelFile.setCurrentIndex(i+1)
+                            val_idx = i
+                        elif "test" in anno_file.lower() and (test_idx < 0  or "instances" in anno_file.lower()):
+                            self.oriCOCOTestLabelFile.setCurrentIndex(i+1)
+                            test_idx = i
+
+                    # if self.convertTestLabels.isChecked():
+                    #     pass
+                
+            
+            self.oriCOCOTestLabelFile.setVisible(False)
+            self.YOLOTestLabelPath.setVisible(False)
+            self.label_7.setVisible(False)
+            self.label_10.setVisible(False)
+            self.testimg_path.setVisible(False)
+            self.browseTestImgPath.setVisible(False)
+            self.COCODatasetPath.textChanged.connect(fill_label)
+
+            self.limitSuffix.clicked.connect(lambda: self.imgSuffix.setEnabled(self.limitSuffix.isChecked()))
+
+            self.COCODistImagePath.textChanged.connect(lambda: self.currentimg_path.setText(self.COCODistImagePath.text()))
+            # self.convertTestLabels.clicked.connect(lambda: self.oriCOCOTestLabelFile.setEnabled(self.convertTestLabels.isChecked()))
+            self.convertTestLabels.clicked.connect(lambda: self.oriCOCOTestLabelFile.setVisible(self.convertTestLabels.isChecked()))
+            self.convertTestLabels.clicked.connect(lambda: self.YOLOTestLabelPath.setVisible(self.convertTestLabels.isChecked()))
+            self.convertTestLabels.clicked.connect(lambda: self.label_7.setVisible(self.convertTestLabels.isChecked()))
+            self.convertTestLabels.clicked.connect(lambda: self.testimg_path.setVisible(self.convertTestLabels.isChecked()))
+            self.convertTestLabels.clicked.connect(lambda: self.label_10.setVisible(self.convertTestLabels.isChecked()))
+            self.convertTestLabels.clicked.connect(lambda: self.browseTestImgPath.setVisible(self.convertTestLabels.isChecked()))
+
+            
+            self.enableCustomPath.clicked.connect(lambda: self.YOLOTrainLabelPath.setEnabled(self.enableCustomPath.isChecked()))
+            self.enableCustomPath.clicked.connect(lambda: self.YOLOValLabelPath.setEnabled(self.enableCustomPath.isChecked()))
+            self.enableCustomPath.clicked.connect(lambda: self.YOLOTestLabelPath.setEnabled(self.enableCustomPath.isChecked()))
+            
+            self.divideImgPath.clicked.connect(lambda: self.trainimg_path.setEnabled(self.divideImgPath.isChecked()))
+            self.divideImgPath.clicked.connect(lambda: self.valimg_path.setEnabled(self.divideImgPath.isChecked()))
+            self.divideImgPath.clicked.connect(lambda: self.testimg_path.setEnabled(self.divideImgPath.isChecked()))
+            self.divideImgPath.clicked.connect(lambda: self.browseTrainImgPath.setEnabled(self.divideImgPath.isChecked()))
+            self.divideImgPath.clicked.connect(lambda: self.browseValImgPath.setEnabled(self.divideImgPath.isChecked()))
+            self.divideImgPath.clicked.connect(lambda: self.browseTestImgPath.setEnabled(self.divideImgPath.isChecked()))
+            
+            def gen_label_idx():
+
+                coco_root_path = self.COCODatasetPath.text()
+
+                def gen_once(img_path, save_file, suffix="*", q=None):
+                    if q is not None:
+                        q.put(f"generating {save_file}, please wait")
+                    if not osp.isdir(osp.join(coco_root_path, img_path)):
+                        return
+                    savestr = ""
+                    print(osp.join(coco_root_path, img_path, f"*.{suffix}"))
+                    for imgf in iglob(osp.join(coco_root_path, img_path, f"*.{suffix}")):
+                        savestr += osp.relpath(imgf, coco_root_path).replace("\\", "/") + "\n"
+                    os.makedirs(osp.dirname(save_file), exist_ok=True)
+                    with open(save_file, "w") as wf:
+                        wf.write(savestr[:-1])
+                    if q is not None:
+                        q.put(f"write {save_file} done")
+                        
+                
+                
+                if "windows" in platform.platform().lower():
+                    imgsuffix = self.imgSuffix.text() if self.limitSuffix.isChecked() else "*"
+                    if len(self.trainimg_path.text()):
+                        gen_once(
+                            self.trainimg_path.text(), 
+                            osp.join(coco_root_path, "labels/train.txt"), 
+                            imgsuffix,
+                            self.gen_idx_queue
+                        )
+                    if len(self.valimg_path.text()):
+                        gen_once(
+                            self.valimg_path.text(), 
+                            osp.join(coco_root_path, "labels/val.txt"), 
+                            imgsuffix,
+                            self.gen_idx_queue
+                        )
+                    if len(self.testimg_path.text()) and self.convertTestLabels.isChecked():
+                        gen_once(
+                            self.testimg_path.text(), 
+                            osp.join(coco_root_path, "labels/test.txt"),
+                            imgsuffix,
+                            self.gen_idx_queue
+                        )
+                    self.gen_idx = True
+                    return
+                
+                if not self.gen_idx:
+                    imgsuffix = self.imgSuffix.text() if self.limitSuffix.isChecked() else "*"
+                    self.gen_idx_processes.clear()
+                    if len(self.trainimg_path.text()):
+                        self.gen_idx_processes.append(
+                            Process(
+                                target=gen_once, 
+                                args=(
+                                    self.trainimg_path.text(), 
+                                    osp.join(coco_root_path, "labels/train.txt"), 
+                                    imgsuffix,
+                                    self.gen_idx_queue
+                                )
+                            )
+                        )
+                    if len(self.valimg_path.text()):
+                        self.gen_idx_processes.append(
+                            Process(
+                                target=gen_once, 
+                                args=(
+                                    self.valimg_path.text(), 
+                                    osp.join(coco_root_path, "labels/val.txt"), 
+                                    imgsuffix,
+                                    self.gen_idx_queue
+                                )
+                            )
+                        )
+                    if len(self.testimg_path.text()) and self.convertTestLabels.isChecked():
+                        self.gen_idx_processes.append(
+                            Process(
+                                target=gen_once, 
+                                args=(
+                                    self.testimg_path.text(), 
+                                    osp.join(coco_root_path, "labels/test.txt"),
+                                    imgsuffix,
+                                    self.gen_idx_queue
+                                )
+                            )
+                        )
+                    [process.start() for process in self.gen_idx_processes]
+                    self.gen_idx = True
+                    self.set_coco2yolo_Enabled(False)
+
+            self.generateIndexFile.clicked.connect(gen_label_idx)
+            
+            def coco2yolo_start_stop():
+                if not self.coco2yolo:
+                    while not self.coco2yoloQueue.empty():
+                        self.coco2yoloQueue.get()
+
+                    coco_root_path = self.COCODatasetPath.text()
+                    
+                    train_labels_file = osp.join(
+                        coco_root_path,
+                        "annotations",
+                        self.oriCOCOTrainLabelFile.currentText()
+                    )
+                    val_labels_file = osp.join(
+                        coco_root_path,
+                        "annotations",
+                        self.oriCOCOValLabelFile.currentText()
+                    )
+
+                    test_labels_file = osp.join(
+                        coco_root_path,
+                        "annotations",
+                        self.oriCOCOTestLabelFile.currentText()
+                    )
+
+                    task_files = []
+                    img_dist_dirs = []
+                    if osp.isfile(train_labels_file):
+                        task_files.append((train_labels_file, osp.join(coco_root_path, self.YOLOTrainLabelPath.text())))
+                        img_dist_dirs.append(self.trainimg_path.text())
+                    if osp.isfile(val_labels_file):
+                        task_files.append((val_labels_file, osp.join(coco_root_path, self.YOLOValLabelPath.text())))
+                        img_dist_dirs.append(self.valimg_path.text())
+                    if self.convertTestLabels.isChecked() and osp.isfile(test_labels_file):
+                        task_files.append((test_labels_file, osp.join(coco_root_path, self.YOLOTestLabelPath.text())))
+                        img_dist_dirs.append(self.testimg_path.text())
+                    
+                    self.coco2yoloProgresses.clear()
+                    for i, file_paths in enumerate(task_files):
+                        self.coco2yoloProgresses.append(
+                            Process(
+                                target=coco2yolo, 
+                                args=file_paths, 
+                                kwargs={
+                                    "moveImg": self.divideImgPath.isChecked() and len(self.currentimg_path.text()) and len(img_dist_dirs[i]),
+                                    "oriImgPath": osp.join(coco_root_path, self.currentimg_path.text()),
+                                    "distImgPath": osp.join(coco_root_path, img_dist_dirs[i]),
+                                    "q": self.coco2yoloQueue, 
+                                    "num_process": len(task_files), 
+                                    "rank": i
+                                }
+                            )
+                        )
+                    
+                    self.coco2yoloPercent = [0., 0., 0.]
+                    self.coco2yoloNum = [0, 0, 0]
+                    self.progressBar_2.setMaximum(1000)
+                    [process.start() for process in self.coco2yoloProgresses]
+                    self.coco2yolo = True
+                    self.set_coco2yolo_Enabled(False)
+                    self.startConvertButton.setText("停止转换")
+                    self.addMsg("转换开始")
+                else:
+                    [process.terminate() for process in self.coco2yoloProgresses]
+                    self.coco2yolo = False
+                    self.set_coco2yolo_Enabled(True)
+                    self.progressBar_2.setValue(0)
+                    self.startConvertButton.setText("开始转换")
+
+
+            self.startConvertButton.clicked.connect(coco2yolo_start_stop)
 
             def to_coco_start_stop():
                 if not self.to_coco:
@@ -271,6 +533,62 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
                         )
                         self.setDivideEnabled(True)
                         self.ConvertButton.setText("开始拆分")
+                
+                if self.gen_idx:
+                    if not any([process.is_alive() for process in self.gen_idx_processes]):
+                        self.gen_idx = False
+                        while not self.gen_idx_queue.empty():
+                            data = self.gen_idx_queue.get()
+                            if isinstance(data, str):
+                                self.addMsg(data)
+                        QtWidgets.QMessageBox.information(
+                            self,
+                            "完成",
+                            "索引生成完成",
+                            QtWidgets.QMessageBox.Ok
+                        )
+                        self.set_coco2yolo_Enabled(True)
+                    else:
+                        if not self.gen_idx_queue.empty():
+                            data = self.gen_idx_queue.get()
+                            if isinstance(data, str):
+                                self.addMsg(data)
+                
+                if self.coco2yolo:
+                    if not any([process.is_alive() for process in self.coco2yoloProgresses]):
+                        self.coco2yolo = False
+                        self.set_coco2yolo_Enabled(True)
+                        self.startConvertButton.setText("开始转换")
+                        while not self.coco2yoloQueue.empty():
+                            data = self.coco2yoloQueue.get()
+                            if isinstance(data, str):
+                                self.addMsg(data)
+                        self.progressBar_2.setValue(1000)
+                        QtWidgets.QMessageBox.information(
+                            self,
+                            "完成",
+                            "转换完成",
+                            QtWidgets.QMessageBox.Ok
+                        )
+                        self.progressBar_2.setValue(0)
+                    else:
+                        if not self.coco2yoloQueue.empty():
+                            data = self.coco2yoloQueue.get()
+                            if isinstance(data, str):
+                                self.addMsg(data)
+                            if isinstance(data, list):
+                                
+                                self.coco2yoloNum[data[0]] = data[2]
+                                for idx in range(len(self.coco2yoloProgresses)):
+                                    if self.coco2yoloNum[idx] == 0:
+                                        return
+                                self.coco2yoloPercent[data[0]] = data[1] * (data[2] / sum(self.coco2yoloNum))
+                                value = int(sum(self.coco2yoloPercent) * 1000)
+                                self.progressBar_2.setValue(value)
+                                if value == 1000:
+                                    [process.terminate() for process in self.coco2yoloProgresses]
+                                    
+
 
 
                 # self.val_ratio = QtWidgets.QDoubleSpinBox()
@@ -313,6 +631,19 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
         self.COCODatasetName.setEnabled(flag)
         self.COCOAuthor.setEnabled(flag)
         self.COCOVersion.setEnabled(flag)
+    
+    def set_coco2yolo_Enabled(self, flag: bool):
+        self.COCODatasetPath.setEnabled(flag)
+        self.browseCOCODatasetPath.setEnabled(flag)
+        self.oriCOCOTrainLabelFile.setEnabled(flag)
+        self.oriCOCOValLabelFile.setEnabled(flag)
+        self.oriCOCOTestLabelFile.setEnabled(flag)
+        self.convertTestLabels.setEnabled(flag)
+        self.enableCustomPath.setEnabled(flag)
+        self.generateIndexFile.setEnabled(flag)
+        self.YOLOTrainLabelPath.setEnabled(flag and self.enableCustomPath.isChecked())
+        self.YOLOValLabelPath.setEnabled(flag and self.enableCustomPath.isChecked())
+        self.YOLOTestLabelPath.setEnabled(flag and self.enableCustomPath.isChecked())
 
     def setDivideEnabled(self, flag: bool):
         self.COCOAnnoPath.setEnabled(flag)
@@ -348,67 +679,6 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
         if self.p is not None:
             self.p.show()
 
-
-def coco2yolo(json_file, dist_dir, prefix="", postfix="", q=None):
-    coco_dataset = COCO(json_file)
-    
-    yolo_labels = {}
-    
-    thread_num = min(32, os.cpu_count())
-    num_anno = len(coco_dataset.annotations)
-    count = 0
-    
-    def label_deal_thread(rank):
-        global count
-        for i, anno in enumerate(coco_dataset.annotations):
-            if i % thread_num == rank:
-                img_info = coco_dataset._get_image_data_by_id(anno['image_id'])
-                img_suffix = img_info["file_name"].split(".")[-1]
-                label_fname = osp.join(dist_dir, osp.basename(prefix + img_info["file_name"])[:-img_suffix-1] + f"{postfix}.txt")
-                
-                label = anno["category_id"] - 1
-                bbox = anno["bbox"]
-                img_w = img_info["width"]
-                img_h = img_info["height"]
-                
-                cx, cy, w, h = [bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2, bbox[2], bbox[3]]
-                cx /= img_w
-                cy /= img_h
-                w /= img_w
-                h /= img_h
-                
-                if label_fname in yolo_labels:
-                    yolo_labels[label_fname] += f"\n{label} {cx} {cy} {w} {h}"
-                else:
-                    yolo_labels[label_fname] = f"{label} {cx} {cy} {w} {h}"
-                count += 1
-                print(f"\r{count}/{num_anno}           ", end="")
-    
-    if q is not None:
-        q.put(f"start dealing labels, number in total: {num_anno}")
-    else:
-        print(f"start dealing labels, number in total: {num_anno}")
-    print()
-    threads = [Thread(target=label_deal_thread, args=(k, )) for k in range(thread_num)]
-    [thread.start() for thread in threads]
-    [thread.join() for thread in threads]
-    
-    print()
-    
-    if q is not None:
-        q.put(f"start writing labels files, number in total: {len(yolo_labels.keys())}")
-    else:
-        print(f"start writing labels files, number in total: {len(yolo_labels.keys())}")
-    
-    count = 0
-    for k, v in yolo_labels.items():
-        open(k, "w").write(v)
-        count += 1
-        print(f"\r{count}", end="")
-        
-    if q is not None:
-        q.put(f"all labels are saved to {osp.abspath(dist_dir)}")
-        
 
 def main():
     import sys
