@@ -52,13 +52,16 @@ force_model_type: l   # 或 b 或 mobile
 ```
 再打开本工具即可
 
-### 2.4 增加COCO格式转换工具
+### 2.4 增加格式转换工具
 
-对于本工具标注的标签格式，可以通过 **“工具-Convert to COCO”** 打开标签转换工具转换为COCO格式，并配有划分训练集、验证集、测试集的功能。
+对于本工具标注的标签格式，可以通过 **“工具-Convert to COCO”** 打开标签转换工具转换为COCO格式，并配有划分训练集、验证集、测试集的功能，为方便训练以及随时向原有数据集中增加数据，支持coco转yolo格式，并支持图像按划分结果放入不同文件夹、生成训练集、验证集、测试集图像索引等功能。
 
 ![image](https://user-images.githubusercontent.com/69880398/235314366-ac94f210-06d4-48c7-9e6d-7a4728cb3272.png)
 
 ![image](https://user-images.githubusercontent.com/69880398/235314404-fc57e176-c8e5-4112-bed7-62e59e3693d4.png)
+
+![image](https://github.com/user-attachments/assets/215e25ec-8c44-4730-9eed-7915fc1a3497)
+
 
 
 ### 2.5 多种数据集生成segment标签
