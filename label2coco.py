@@ -192,7 +192,7 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
                     savestr = ""
                     print(osp.join(coco_root_path, img_path, f"*.{suffix}"))
                     for imgf in iglob(osp.join(coco_root_path, img_path, f"*.{suffix}")):
-                        savestr += osp.relpath(imgf, coco_root_path).replace("\\", "/") + "\n"
+                        savestr += "./" + osp.relpath(imgf, coco_root_path).replace("\\", "/") + "\n"
                     os.makedirs(osp.dirname(save_file), exist_ok=True)
                     with open(save_file, "w") as wf:
                         wf.write(savestr[:-1])
