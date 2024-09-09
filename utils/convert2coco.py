@@ -31,6 +31,7 @@ class COCO:
         self.categories = []
         self.categorie_num = {}
         self.images_dict = {}
+        self.real_idx = {}
 
         if isinstance(fp, str):
             assert os.path.exists(fp)
@@ -62,6 +63,7 @@ class COCO:
         self.lic = coco_parent.get_license()
         self.categories = coco_parent.get_categories()
         self.categorie_num = {idx: 0 for idx in coco_parent.get_category_num()}
+        
         # print(coco_parent.get_category_num())
 
     def get_info(self):
@@ -162,10 +164,15 @@ class COCO:
             self.annotations = data["annotations"]
             self.categories = data["categories"]
             self._count_category_num()
+            self._count_real_idx()
             
             for img in self.images:
                 self.images_dict[img["id"]] = img
-
+                
+    def _count_real_idx(self):
+        for i, cate in enumerate(self.categories):
+            self.real_idx[cate["id"]] = i
+            
     def change_info(self, data_name, version="1.0", url="", author=""):
         """
         change information of this dataset
@@ -303,9 +310,6 @@ class COCO:
             self.categorie_num[category_id - 1] += 1
         else:
             self.categorie_num[category_id - 1] = 1
-
-
-
 
     def save(self, file_name: str = None):
         """
@@ -668,15 +672,17 @@ def coco2yolo(json_file, dist_dir, moveImg=False, oriImgPath="", distImgPath="",
 
         img_file = osp.basename(img["file_name"])
         ori_img_path = osp.join(oriImgPath, img_file)
-        count += 1
-        print(f"\rmove files: {count}/{num_files}      ", end="")
-        if osp.isfile(ori_img_path):
-            shutil.move(ori_img_path, distImgPath)
-            if q is not None:
-                q.put([rank, count / bar_length, bar_length])
+        
+        if moveImg:
+            count += 1
+            print(f"\rmove files: {count}/{num_files}      ", end="")
+            if osp.isfile(ori_img_path):
+                shutil.move(ori_img_path, distImgPath)
+                if q is not None:
+                    q.put([rank, count / bar_length, bar_length])
 
     print()
-    
+    count = 0
     
     def label_deal_thread(thread_rank):
         global count
@@ -686,7 +692,7 @@ def coco2yolo(json_file, dist_dir, moveImg=False, oriImgPath="", distImgPath="",
                 img_suffix = img_info["file_name"].split(".")[-1]
                 label_fname = osp.join(dist_dir, osp.basename(img_info["file_name"])[:-len(img_suffix)-1] + ".txt").replace("\\", "/")
                 
-                label = anno["category_id"] - 1
+                label = coco_dataset.real_idx[anno["category_id"]]
                 bbox = anno["bbox"]
                 img_w = img_info["width"]
                 img_h = img_info["height"]
