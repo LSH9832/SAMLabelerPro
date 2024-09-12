@@ -206,21 +206,21 @@ class LabelConverter(QtWidgets.QMainWindow, labelConverter):  #
                     if len(self.trainimg_path.text()):
                         gen_once(
                             self.trainimg_path.text(), 
-                            osp.join(coco_root_path, "labels/train.txt"), 
+                            osp.join(coco_root_path, "train.txt"), 
                             imgsuffix,
                             self.gen_idx_queue
                         )
                     if len(self.valimg_path.text()):
                         gen_once(
                             self.valimg_path.text(), 
-                            osp.join(coco_root_path, "labels/val.txt"), 
+                            osp.join(coco_root_path, "val.txt"), 
                             imgsuffix,
                             self.gen_idx_queue
                         )
                     if len(self.testimg_path.text()) and self.convertTestLabels.isChecked():
                         gen_once(
                             self.testimg_path.text(), 
-                            osp.join(coco_root_path, "labels/test.txt"),
+                            osp.join(coco_root_path, "test.txt"),
                             imgsuffix,
                             self.gen_idx_queue
                         )
